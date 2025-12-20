@@ -6,7 +6,7 @@ export function saveNovel(novel: Novel): void {
   if (typeof window === 'undefined') return;
 
   const novels = getAllNovels();
-  const existingIndex = novels.findIndex(n => n.slug === novel.slug);
+  const existingIndex = novels.findIndex(n => n.book.slug === novel.book.slug);
 
   if (existingIndex >= 0) {
     novels[existingIndex] = novel;
@@ -21,7 +21,7 @@ export function getNovel(slug: string): Novel | null {
   if (typeof window === 'undefined') return null;
 
   const novels = getAllNovels();
-  return novels.find(n => n.slug === slug) || null;
+  return novels.find(n => n.book.slug === slug) || null;
 }
 
 export function getAllNovels(): Novel[] {
@@ -40,6 +40,6 @@ export function getAllNovels(): Novel[] {
 export function removeNovel(slug: string): void {
   if (typeof window === 'undefined') return;
 
-  const novels = getAllNovels().filter(n => n.slug !== slug);
+  const novels = getAllNovels().filter(n => n.book.slug !== slug);
   localStorage.setItem(NOVELS_KEY, JSON.stringify(novels));
 }

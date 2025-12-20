@@ -67,17 +67,17 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {novels.map((novel) => (
-                <div key={novel.slug} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div key={novel.book.name} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                   <img
-                    src={novel.cover}
-                    alt={novel.title}
+                    src={novel.book.coverUrl}
+                    alt={novel.book.name}
                     className="w-full h-48 object-cover rounded-md mb-4"
                   />
-                  <h3 className="font-semibold text-lg mb-2">{novel.title}</h3>
-                  <p className="text-gray-600 mb-2">by {novel.author}</p>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-3">{novel.description}</p>
+                  <h3 className="font-semibold text-lg mb-2">{novel.book.name}</h3>
+                  <p className="text-gray-600 mb-2">by {novel.book.author.name}</p>
+                  <p className="text-sm text-gray-500 mb-4 line-clamp-3">Chapter count: {novel.book.chapterCount}</p>
                   <Link
-                    href={`/novel/${novel.slug}`}
+                    href={`/novel/${novel.book.slug}`}
                     className="inline-block px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
                   >
                     Read Novel

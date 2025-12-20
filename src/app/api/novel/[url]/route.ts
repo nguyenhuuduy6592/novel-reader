@@ -15,6 +15,10 @@ export async function GET(
 
     const data: NovelResponse = await response.json();
     const novel = data.pageProps;
+    novel.book.coverUrl = novel.book.coverUrl.startsWith('http')
+      ? novel.book.coverUrl
+      : `https://static.truyenchucv.org${novel.book.coverUrl}`;
+    console.log(novel.book.coverUrl);
     const chapterList = data.pageProps.chapterList || [];
 
     // Fetch first page to get totalPages

@@ -53,30 +53,16 @@ export default function NovelPage() {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex flex-col md:flex-row gap-6">
             <img
-              src={novel.cover}
-              alt={novel.title}
+              src={novel.book.coverUrl}
+              alt={novel.book.name}
               className="w-full md:w-48 h-64 object-cover rounded-md"
             />
             <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{novel.title}</h1>
-              <p className="text-xl text-gray-600 mb-4">by {novel.author}</p>
+              <h1 className="text-3xl font-bold mb-2">{novel.book.name}</h1>
+              <p className="text-xl text-gray-600 mb-4">by {novel.book.author.name}</p>
               <div className="mb-4">
-                <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mr-2">
-                  {novel.status}
-                </span>
-                <span className="text-gray-500">{novel.chapterCount} chapters</span>
+                <span className="text-gray-500">{novel.book.chapterCount} chapters</span>
               </div>
-              <div className="mb-4">
-                <h3 className="font-semibold mb-2">Genres:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {novel.genres.map((genre) => (
-                    <span key={genre} className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <p className="text-gray-700 mb-6">{novel.description}</p>
               <div className="flex gap-4">
                 <button
                   onClick={handleRefetch}

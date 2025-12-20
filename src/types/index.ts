@@ -4,21 +4,20 @@ export interface NovelResponse {
 
 export interface Novel {
   book: BookInfo
-  slug: string;
-  title: string;
-  author: string;
-  description: string;
-  cover: string;
-  status: string;
-  genres: string[];
-  lastUpdated?: string;
   chapterList?: Chapter[];
 }
 
 export interface BookInfo {
+  bookId: number;
+  slug: string;
   coverUrl: string;
   name: string;
   chapterCount: number
+  author: AuthorInfo;
+}
+
+export interface AuthorInfo {
+  name: string;
 }
 
 export interface Chapter {
