@@ -48,47 +48,47 @@ export default function NovelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex flex-col md:flex-row gap-6">
+    <div className="min-h-screen bg-gray-50 py-2 px-1">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white p-2 rounded shadow-sm">
+          <div className="flex flex-col md:flex-row gap-2">
             <img
               src={novel.book.coverUrl}
               alt={novel.book.name}
-              className="w-full md:w-48 h-64 object-cover rounded-md"
+              className="w-full md:w-24 h-32 object-cover rounded"
             />
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{novel.book.name}</h1>
-              <p className="text-xl text-gray-600 mb-4">by {novel.book.author.name}</p>
-              <div className="mb-4">
-                <span className="text-gray-500">{novel.book.chapterCount} chapters</span>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold mb-0.5 truncate">{novel.book.name}</h1>
+              <p className="text-base text-gray-600 mb-1 truncate">by {novel.book.author.name}</p>
+              <div className="mb-1">
+                <span className="text-gray-500 text-xs">{novel.book.chapterCount} chapters</span>
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-1">
                 <button
                   onClick={handleRefetch}
                   disabled={loading}
-                  className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
                 >
-                  {loading ? 'Refetching...' : 'Refetch Data'}
+                  {loading ? 'Refetching...' : 'Refetch'}
                 </button>
               </div>
-              {error && <p className="text-red-500 mt-2">{error}</p>}
+              {error && <p className="text-red-500 mt-0.5 text-xs">{error}</p>}
             </div>
           </div>
 
           {novel.chapterList && novel.chapterList.length > 0 && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4">Chapters</h2>
-              <div className="space-y-2">
+            <div className="mt-4">
+              <h2 className="text-lg font-bold mb-2">Chapters</h2>
+              <div className="space-y-0.5">
                 {novel.chapterList.map((chapter, index) => (
                   <Link
                     key={chapter.slug}
                     href={`/novel/${slug}/chapter/${chapter.slug}`}
-                    className="block p-4 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                    className="block p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-xs"
                   >
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">Chapter {index + 1}: {chapter.name}</span>
-                      <span className="text-gray-500">→</span>
+                      <span className="font-medium truncate">Ch {index + 1}: {chapter.name}</span>
+                      <span className="text-gray-500 text-xs">→</span>
                     </div>
                   </Link>
                 ))}
