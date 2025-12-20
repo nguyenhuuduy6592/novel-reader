@@ -71,16 +71,30 @@ export default function NovelPage() {
                 >
                   {loading ? 'Refetching...' : 'Refetch Data'}
                 </button>
-                <Link
-                  href={`/novel/${slug}/chapters`}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  View Chapters
-                </Link>
               </div>
               {error && <p className="text-red-500 mt-2">{error}</p>}
             </div>
           </div>
+
+          {novel.chapterList && novel.chapterList.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold mb-4">Chapters</h2>
+              <div className="space-y-2">
+                {novel.chapterList.map((chapter, index) => (
+                  <Link
+                    key={chapter.slug}
+                    href={`/novel/${slug}/chapter/${chapter.slug}`}
+                    className="block p-4 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Chapter {index + 1}: {chapter.name}</span>
+                      <span className="text-gray-500">→</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -22,8 +22,7 @@ export interface AuthorInfo {
 
 export interface Chapter {
   slug: string;
-  title: string;
-  number: number;
+  name: string;
 }
 
 export interface ChaptersResponse {
