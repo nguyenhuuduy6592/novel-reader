@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Novel, ApiResponse, ChaptersResponse, NovelResponse } from '@/types';
+import { Novel, ApiResponse, NovelResponse } from '@/types';
 
 export async function GET(
   request: NextRequest,
@@ -27,13 +27,13 @@ export async function GET(
     // Fetch all chapter pages
     for (let page = 2; page <= totalPages; page++) {
       const pageUrl = `${url}&page=${page}`;
-      const chapterResponse = await fetch(pageUrl);
+      const chapterListResponse = await fetch(pageUrl);
       
-      if (!chapterResponse.ok) {
+      if (!chapterListResponse.ok) {
         throw new Error(`Failed to fetch novel: ${response.statusText}`);
       }
 
-      const chapterData: NovelResponse = await chapterResponse.json();
+      const chapterData: NovelResponse = await chapterListResponse.json();
       const novel = chapterData.pageProps;
       novel.chapterList = chapterData.pageProps.chapterList || [];
       for (const chapter of novel.chapterList) {

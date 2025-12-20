@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ChapterContent, ApiResponse } from '@/types';
+import { ChapterContent, ApiResponse, ChaptersResponse } from '@/types';
 
 export async function GET(
   request: NextRequest,
@@ -7,18 +7,19 @@ export async function GET(
 ) {
   try {
     const { slug, chapterSlug } = await params;
-    const apiUrl = `https://truyenchucv.org/api/chapter/${slug}/${chapterSlug}`;
+
+    const apiUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}/${chapterSlug}.html.json?slug=${slug}&slug=${chapterSlug}.html`;
 
     const response = await fetch(apiUrl);
     if (!response.ok) {
+      console.error(`Error fetching chapter: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to fetch chapter: ${response.statusText}`);
     }
 
-    const data: ChapterContent = await response.json();
-
+    const data: ChaptersResponse = await response.json();
     const apiResponse: ApiResponse<ChapterContent> = {
       success: true,
-      data,
+      data: data.pageProps,
     };
 
     return NextResponse.json(apiResponse);

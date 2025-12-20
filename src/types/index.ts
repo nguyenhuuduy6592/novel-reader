@@ -23,21 +23,15 @@ export interface AuthorInfo {
 export interface Chapter {
   slug: string;
   name: string;
+  content: string;
 }
 
 export interface ChaptersResponse {
-  chapters: Chapter[];
-  total: number;
-  page: number;
-  perPage: number;
-  totalPages: number;
+  pageProps: ChapterContent;
 }
 
 export interface ChapterContent {
-  title: string;
-  content: string;
-  prevSlug?: string;
-  nextSlug?: string;
+  chapter: Chapter;
 }
 
 export interface ApiResponse<T> {

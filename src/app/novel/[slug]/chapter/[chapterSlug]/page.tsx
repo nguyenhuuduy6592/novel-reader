@@ -50,8 +50,8 @@ export default function ChapterPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error || 'Chapter not found'}</p>
-          <Link href={`/novel/${slug}/chapters`} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-            Back to Chapters
+          <Link href={`/novel/${slug}`} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+            Back to Novel
           </Link>
         </div>
       </div>
@@ -65,9 +65,6 @@ export default function ChapterPage() {
           <div className="flex gap-4">
             <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline">
               ← Novel Info
-            </Link>
-            <Link href={`/novel/${slug}/chapters`} className="text-blue-500 hover:underline">
-              Chapters
             </Link>
           </div>
           <div className="flex gap-2">
