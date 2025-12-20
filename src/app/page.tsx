@@ -25,7 +25,7 @@ export default function Home() {
     const result = await importNovel(encodeURIComponent(url.trim()));
     if (result.success) {
       setNovels(getAllNovels());
-      setUrl('');
+      // setUrl('');
     } else {
       setError(result.error || 'Failed to import novel');
     }

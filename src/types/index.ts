@@ -1,13 +1,24 @@
+export interface NovelResponse {
+  pageProps: Novel;
+}
+
 export interface Novel {
+  book: BookInfo
   slug: string;
   title: string;
   author: string;
   description: string;
   cover: string;
-  chapterCount: number;
   status: string;
   genres: string[];
   lastUpdated?: string;
+  chapterList?: Chapter[];
+}
+
+export interface BookInfo {
+  coverUrl: string;
+  name: string;
+  chapterCount: number
 }
 
 export interface Chapter {
