@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getNovel, saveCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
+import { HomeIcon, ArrowLeftIcon } from '@/lib/icons';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -98,16 +99,11 @@ export default function ChapterPage() {
         <div className="mb-6 flex justify-between items-center">
           <div className="flex gap-2">
             <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9,22 9,12 15,12 15,22"/>
-              </svg>
+              <HomeIcon />
               Home
             </Link>
             <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline flex items-center gap-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m15 18-6-6 6-6"/>
-              </svg>
+              <ArrowLeftIcon />
               Novel
             </Link>
           </div>

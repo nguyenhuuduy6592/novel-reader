@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { getNovel, getCurrentChapter } from '@/lib/indexedDB';
 import { Novel } from '@/types';
 import Image from 'next/image';
+import { HomeIcon } from '@/lib/icons';
 
 export default function NovelPage() {
   const params = useParams();
@@ -54,13 +55,16 @@ export default function NovelPage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white p-2 rounded shadow-sm">
           <div className="flex justify-between items-start mb-2">
-            <Link href="/" className="text-blue-500 hover:text-blue-700 inline-block">← Back to Home</Link>
+            <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
+              <HomeIcon />
+              Home
+            </Link>
             <Link
               href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
-              className={`px-4 py-2 rounded-md text-sm flex items-center gap-1 transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm flex items-center gap-1 transition-colors cursor-pointer ${
                 currentChapterSlug
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-green-500 text-white hover:bg-green-600'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700'
+                  : 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700 focus:bg-green-700'
               }`}
             >
               <span>{currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}</span>
