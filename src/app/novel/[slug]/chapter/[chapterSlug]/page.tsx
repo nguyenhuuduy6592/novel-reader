@@ -2,20 +2,28 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getNovel } from '@/lib/localStorage';
-import { ChapterInfo } from '@/types';
+import { useState, useEffect } from 'react';
+import { getNovel } from '@/lib/indexedDB';
+import { ChapterInfo, Novel } from '@/types';
 
 export default function ChapterPage() {
   const params = useParams();
   const slug = params.slug as string;
   const chapterSlug = params.chapterSlug as string;
-  const novel = getNovel(slug);
-  let chapter: ChapterInfo | undefined = undefined;
-  if (novel && novel.chapterList) {
-    chapter = novel.chapterList.find(c => c.chapter.slug === chapterSlug);
-  }
+  const [chapter, setChapter] = useState<ChapterInfo | null>(null);
 
-  if (!chapter) {
+  useEffect(() => {
+    const loadChapter = async () => {
+      const novel = await getNovel(slug);
+      if (novel && novel.chapters) {
+        const ch = novel.chapters.find(c => c.chapter.slug === chapterSlug);
+        setChapter(ch || null);
+      }
+    };
+    loadChapter();
+  }, [slug, chapterSlug]);
+
+  if (chapter === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

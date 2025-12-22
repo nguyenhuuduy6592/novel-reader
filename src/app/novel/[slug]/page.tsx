@@ -2,18 +2,36 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getNovel } from '@/lib/localStorage';
+import { useState, useEffect } from 'react';
+import { getNovel } from '@/lib/indexedDB';
+import { Novel } from '@/types';
 import Image from 'next/image';
 
 export default function NovelPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const novel = getNovel(slug);
+  const [novel, setNovel] = useState<Novel | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadNovel = async () => {
+      const n = await getNovel(slug);
+      setNovel(n);
+      setIsLoading(false);
+    };
+    loadNovel();
+  }, [slug]);
 
   if (!novel) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
+          {isLoading ? (
+            <p className="text-gray-500">Loading novel...</p>
+          ) : (
+            <p className="text-red-500">Novel not found.</p>
+          )}
+          <br />
           <Link href="/" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
             Go Home
           </Link>
@@ -44,11 +62,11 @@ export default function NovelPage() {
             </div>
           </div>
 
-          {novel.chapterList && novel.chapterList.length > 0 && (
+          {novel.chapters && novel.chapters.length > 0 && (
             <div className="mt-4">
               <h2 className="text-lg font-bold mb-2">Chapters</h2>
               <div className="space-y-0.5">
-                {novel.chapterList.map((chapterInfo, index) => (
+                {novel.chapters.map((chapterInfo, index) => (
                   <Link
                     key={chapterInfo.chapter.slug}
                     href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}

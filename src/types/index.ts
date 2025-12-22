@@ -4,7 +4,7 @@ export interface GenericResponse<T> {
 
 export interface Novel {
   book: NovelInfo
-  chapterList?: ChapterInfo[];
+  chapters?: ChapterInfo[];
 }
 
 export interface NovelInfo {

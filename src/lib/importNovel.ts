@@ -1,5 +1,5 @@
 import { Novel } from '@/types';
-import { saveNovel } from './localStorage';
+import { saveNovel } from './indexedDB';
 
 export async function importNovelFromJson(jsonString: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -11,7 +11,7 @@ export async function importNovelFromJson(jsonString: string): Promise<{ success
       : `https://static.truyenchucv.org${novel.book.coverUrl}`;
 
     console.log('Importing novel:', novel);
-    saveNovel(novel);
+    await saveNovel(novel);
     return { success: true };
   } catch (error) {
     return {

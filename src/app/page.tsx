@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Novel } from '@/types';
-import { getAllNovels } from '@/lib/localStorage';
+import { getAllNovels } from '@/lib/indexedDB';
 import { importNovelFromJson } from '@/lib/importNovel';
 import Image from 'next/image';
 
@@ -14,8 +14,11 @@ export default function Home() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNovels(getAllNovels());
+    const loadNovels = async () => {
+      const novels = await getAllNovels();
+      setNovels(novels);
+    };
+    loadNovels();
   }, []);
 
   const handleImport = async () => {
@@ -25,7 +28,8 @@ export default function Home() {
     const result = await importNovelFromJson(json.trim());
 
     if (result.success) {
-      setNovels(getAllNovels());
+      const novels = await getAllNovels();
+      setNovels(novels);
     } else {
       setError(result.error || 'Failed to import novel');
     }
