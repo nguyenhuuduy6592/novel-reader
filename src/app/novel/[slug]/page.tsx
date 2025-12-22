@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { getNovel } from '@/lib/indexedDB';
 import { Novel } from '@/types';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ export default function NovelPage() {
   const slug = params.slug as string;
   const [novel, setNovel] = useState<Novel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadNovel = async () => {
@@ -64,9 +65,22 @@ export default function NovelPage() {
 
           {novel.chapters && novel.chapters.length > 0 && (
             <div className="mt-4">
+              <div className="mb-3">
+                <input
+                  type="text"
+                  placeholder="Search chapters..."
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <h2 className="text-lg font-bold mb-2">Chapters</h2>
               <div className="space-y-0.5">
-                {novel.chapters.map((chapterInfo, index) => (
+                {novel.chapters
+                  .filter((chapterInfo) =>
+                    chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((chapterInfo, index) => (
                   <Link
                     key={chapterInfo.chapter.slug}
                     href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
