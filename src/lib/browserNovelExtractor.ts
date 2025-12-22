@@ -1,16 +1,18 @@
-async function extractNovel(novelUrl) {
+import { Novel, Chapter, ChaptersResponse } from '../types';
+
+async function extractNovel(novelUrl: string): Promise<Novel> {
   // Extract novel slug from URL
-  const slug = novelUrl.split('/').pop().replace('.html', '');
+  const slug = novelUrl.split('/').pop()!.replace('.html', '');
   novelUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}.html.json?slug=${slug}.html`
 
   // Fetch novel info and initial chapter list
   const response = await fetch(novelUrl);
   const data = await response.json();
-  let novel = data.pageProps;
+  let novel: Novel = data.pageProps as Novel;
   novel.book.coverUrl = novel.book.coverUrl.startsWith('http')
     ? novel.book.coverUrl
     : `https://static.truyenchucv.org${novel.book.coverUrl}`;
-  let chapterList = novel.chapterList || [];
+  let chapterList: Chapter[] = novel.chapterList || [];
 
   // Handle pagination for chapter list
   const totalPages = Math.ceil(novel.book.chapterCount / 50);
@@ -18,8 +20,8 @@ async function extractNovel(novelUrl) {
     const pageUrl = `${novelUrl}&page=${page}`;
     const pageResponse = await fetch(pageUrl);
     const pageData = await pageResponse.json();
-    const pageNovel = pageData.pageProps;
-    for (const chapter of pageNovel.chapterList) {
+    const pageNovel: Novel = pageData.pageProps as Novel;
+    for (const chapter of pageNovel.chapterList || []) {
       chapterList.push(chapter);
     }
   }
@@ -40,8 +42,8 @@ async function extractNovel(novelUrl) {
       if (chapResponse.status === 429) {
         throw new Error('Too many requests. Please try again later.');
       }
-      const chapData = await chapResponse.json();
-      chapter.content = chapData.pageProps.chapter.content;
+      const chapData = await chapResponse.json() as ChaptersResponse;
+      chapter.content = chapData.pageProps.content;
     });
     await Promise.all(promises);
   }
