@@ -38,6 +38,7 @@ async function extractNovel(novelUrl) {
   // Fetch content for each chapter in batches of 5
   for (let i = 0; i < novel.chapterList.length; i += 5) {
     const batch = novel.chapterList.slice(i, i + 5);
+    console.log(`Extracting chapters ${i + 1}-${Math.min(i + 5, novel.chapterList.length)}/${novel.chapterList.length}`);
     const promises = batch.map(async (chapter) => {
       const apiUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}/${chapter.slug}.html.json?slug=${slug}.html&slug=${chapter.slug}.html`;
       const chapResponse = await fetch(apiUrl);
