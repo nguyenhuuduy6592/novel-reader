@@ -6,16 +6,30 @@ import { importNovelFromJson } from '@/lib/importNovel';
 
 export default function ImportPage() {
   const [json, setJson] = useState('');
+  const [fileContent, setFileContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const text = await file.text();
+        setFileContent(text);
+        setJson('');
+      } catch (error) {
+        setError('Failed to read file');
+      }
+    }
+  };
 
   const handleImport = async () => {
     setLoading(true);
     setError('');
     setSuccess(false);
 
-    let jsonContent = json.trim();
+    let jsonContent = (fileContent || json).trim();
 
     // If it's a URL, fetch the JSON
     if (jsonContent.startsWith('http')) {
@@ -70,22 +84,36 @@ export default function ImportPage() {
             </Link>
           </div>
           <div className="flex gap-4">
-            <textarea
-              value={json}
-              onChange={(e) => setJson(e.target.value)}
-              placeholder="Paste novel JSON here or enter JSON URL"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
-            />
-            <button
-              onClick={handleImport}
-              disabled={loading || !json.trim()}
-              className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Importing...' : 'Import'}
-            </button>
+            <div className="flex flex-col md:flex-row gap-4 w-full">
+              <div className="flex-1 space-y-2">
+                <textarea
+                  value={json}
+                  onChange={(e) => setJson(e.target.value)}
+                  placeholder="Paste novel JSON here or enter JSON URL"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
+                />
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+              <button
+                onClick={handleImport}
+                disabled={loading || !(json.trim() || fileContent)}
+                className="px-6 py-16 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed self-start md:self-auto whitespace-nowrap"
+              >
+                {loading ? 'Importing...' : 'Import'}
+              </button>
+            </div>
           </div>
           {error && <p className="text-red-500 mt-2">{error}</p>}
-          {success && <p className="text-green-500 mt-2">Novel imported successfully!</p>}
+          {success && (
+            <div className="mt-2 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+              Novel imported successfully!
+            </div>
+          )}
         </div>
       </div>
     </div>
