@@ -65,7 +65,7 @@ export default function ImportPage() {
           <h1 className="text-3xl font-bold">Import Novel</h1>
           <Link
             href="/"
-            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer"
           >
             Back to Home
           </Link>
@@ -102,7 +102,7 @@ export default function ImportPage() {
               <button
                 onClick={handleImport}
                 disabled={loading || !(json.trim() || fileContent)}
-                className="px-6 py-16 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed self-start md:self-auto whitespace-nowrap"
+                className="px-6 py-16 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed self-start md:self-auto whitespace-nowrap"
               >
                 {loading ? 'Importing...' : 'Import'}
               </button>

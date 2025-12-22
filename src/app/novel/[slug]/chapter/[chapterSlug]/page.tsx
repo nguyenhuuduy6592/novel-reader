@@ -84,7 +84,7 @@ export default function ChapterPage() {
             <p className="text-red-500">Chapter not found.</p>
           )}
           <br />
-          <Link href={`/novel/${slug}`} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+          <Link href={`/novel/${slug}`} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer">
             Back to Novel
           </Link>
         </div>
@@ -114,14 +114,14 @@ export default function ChapterPage() {
           <div className="flex gap-2 items-center">
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+              className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
             >
               {showSettings ? 'Hide' : 'Theme'}
             </button>
             {chapter.prevChapter && (
               <Link
                 href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 text-sm"
+                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm"
               >
                 Previous
               </Link>
@@ -129,7 +129,7 @@ export default function ChapterPage() {
             {chapter.nextChapter && (
               <Link
                 href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 text-sm"
+                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm"
               >
                 Next
               </Link>
@@ -249,7 +249,7 @@ export default function ChapterPage() {
           {chapter.prevChapter && (
             <Link
               href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
             >
               ← Previous Chapter
             </Link>
@@ -257,7 +257,7 @@ export default function ChapterPage() {
           {chapter.nextChapter && (
             <Link
               href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
             >
               Next Chapter →
             </Link>

@@ -60,15 +60,7 @@ export default function Page() {
       <h1>Browser Novel Extractor Code</h1>
       <button
         onClick={handleCopy}
-        style={{
-          marginBottom: '10px',
-          padding: '10px 20px',
-          backgroundColor: copied ? '#4CAF50' : '#007BFF',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
+        className={`mb-2.5 px-5 py-2.5 text-white rounded cursor-pointer border-none ${copied ? 'bg-green-500 hover:bg-green-600 active:bg-green-700 focus:bg-green-700' : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700'}`}
       >
         {copied ? 'Copied!' : 'Copy Code'}
       </button>
