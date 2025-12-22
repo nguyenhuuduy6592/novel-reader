@@ -4,14 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Novel } from '@/types';
 import { getAllNovels } from '@/lib/indexedDB';
-import { importNovelFromJson } from '@/lib/importNovel';
 import Image from 'next/image';
 
 export default function Home() {
-  const [json, setJson] = useState('');
   const [novels, setNovels] = useState<Novel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const loadNovels = async () => {
@@ -21,56 +17,17 @@ export default function Home() {
     loadNovels();
   }, []);
 
-  const handleImport = async () => {
-    setLoading(true);
-    setError('');
-
-    const result = await importNovelFromJson(json.trim());
-
-    if (result.success) {
-      const novels = await getAllNovels();
-      setNovels(novels);
-    } else {
-      setError(result.error || 'Failed to import novel');
-    }
-
-    setLoading(false);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">Novel Reader</h1>
-
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold mb-4">Import Novel</h2>
-          <div className="mb-4">
-            <label>
-              Import from JSON
-            </label>
-            <Link
-              href="/code-display"
-              className="ml-4 text-blue-500 hover:text-blue-700 underline"
-            >
-              View Code
-            </Link>
-          </div>
-          <div className="flex gap-4">
-              <textarea
-                value={json}
-                onChange={(e) => setJson(e.target.value)}
-                placeholder="Paste novel JSON here"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
-              />
-            <button
-              onClick={handleImport}
-              disabled={loading || !json.trim()}
-              className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Importing...' : 'Import'}
-            </button>
-          </div>
-          {error && <p className="text-red-500 mt-2">{error}</p>}
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">Novel Reader</h1>
+          <Link
+            href="/import"
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            Import Novel
+          </Link>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
