@@ -46,6 +46,17 @@ async function extractNovel(novelUrl) {
         chapter.content = 'No content available';
         return;
       }
+      if (chapResponse.status === 403) {
+        const htmlUrl = `https://truyenchucv.org/truyen/${slug}/${chapter.slug}.html`;
+        const htmlResponse = await fetch(htmlUrl);
+        const htmlText = await htmlResponse.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        const script = doc.getElementById('__NEXT_DATA__');
+        const data = JSON.parse(script.innerHTML);
+        chapter.content = data.props.pageProps.chapter.content;
+        return;
+      }
       if (chapResponse.status === 429) {
         throw new Error('Too many requests. Please try again later.');
       }
@@ -54,6 +65,7 @@ async function extractNovel(novelUrl) {
       chapter.content = chapData.pageProps.content;
     });
     await Promise.all(promises);
+    await new Promise((resolve) => setTimeout(resolve, 250)); // Rate limiting
   }
 
   return novel;
