@@ -93,25 +93,35 @@ export default function ChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 sm:py-8 sm:px-4">
+    <div className="min-h-screen bg-gray-50 pb-4 sm:py-8 sm:px-4">
       <div className="max-w-4xl mx-auto sm:mx-auto">
         <div className="mb-6 flex justify-between items-center">
-          <div className="flex gap-4">
-            <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline">
-              ← Novel Info
+          <div className="flex gap-2">
+            <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+              </svg>
+              Home
+            </Link>
+            <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+              Novel
             </Link>
           </div>
           <div className="flex gap-2 items-center">
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+              className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
             >
               {showSettings ? 'Hide' : 'Theme'}
             </button>
             {chapter.prevChapter && (
               <Link
                 href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 text-sm"
               >
                 Previous
               </Link>
@@ -119,7 +129,7 @@ export default function ChapterPage() {
             {chapter.nextChapter && (
               <Link
                 href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 text-sm"
               >
                 Next
               </Link>
@@ -239,7 +249,7 @@ export default function ChapterPage() {
           {chapter.prevChapter && (
             <Link
               href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-              className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
             >
               ← Previous Chapter
             </Link>
@@ -247,7 +257,7 @@ export default function ChapterPage() {
           {chapter.nextChapter && (
             <Link
               href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-              className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
             >
               Next Chapter →
             </Link>
