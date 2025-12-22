@@ -31,3 +31,11 @@ export interface ChapterInfo {
   nextChapter?: ChapterContent | undefined;
   prevChapter?: ChapterContent | undefined;
 }
+
+export interface ReadingThemeConfig {
+  fontFamily: 'serif' | 'sans-serif' | 'monospace';
+  fontSize: number; // in px, default 16
+  background: 'light' | 'dark' | 'sepia' | 'night';
+  lineHeight: number; // default 1.6
+  padding: 'compact' | 'normal' | 'wide' | 'full'; // default 'normal'
+}

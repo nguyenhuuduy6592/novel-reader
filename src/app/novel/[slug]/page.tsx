@@ -45,7 +45,15 @@ export default function NovelPage() {
     <div className="min-h-screen bg-gray-50 py-2 px-1">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white p-2 rounded shadow-sm">
-          <Link href="/" className="text-blue-500 hover:text-blue-700 mb-2 inline-block">← Back to Home</Link>
+          <div className="flex justify-between items-start mb-2">
+            <Link href="/" className="text-blue-500 hover:text-blue-700 inline-block">← Back to Home</Link>
+            <Link
+              href={`/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
+              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm flex items-center gap-1"
+            >
+              <span>🎯 Start Reading</span>
+            </Link>
+          </div>
           <div className="flex flex-col md:flex-row gap-2">
             <Image
               src={novel.book.coverUrl}
