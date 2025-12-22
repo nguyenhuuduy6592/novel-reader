@@ -1,18 +1,23 @@
-import { Novel, Chapter, ChaptersResponse } from '../types';
-
-async function extractNovel(novelUrl: string): Promise<Novel> {
+/**
+ * Extracts novel data from the given URL.
+ * @param {string} novelUrl - The URL of the novel.
+ * @returns {Promise<import('../types').Novel>} The extracted novel data.
+ */
+async function extractNovel(novelUrl) {
   // Extract novel slug from URL
-  const slug = novelUrl.split('/').pop()!.replace('.html', '');
+  const slug = novelUrl.split('/').pop().replace('.html', '');
   novelUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}.html.json?slug=${slug}.html`
 
   // Fetch novel info and initial chapter list
   const response = await fetch(novelUrl);
   const data = await response.json();
-  let novel: Novel = data.pageProps as Novel;
+  /** @type {import('../types').Novel} */
+  let novel = data.pageProps;
   novel.book.coverUrl = novel.book.coverUrl.startsWith('http')
     ? novel.book.coverUrl
     : `https://static.truyenchucv.org${novel.book.coverUrl}`;
-  let chapterList: Chapter[] = novel.chapterList || [];
+  /** @type {import('../types').Chapter[]} */
+  let chapterList = novel.chapterList || [];
 
   // Handle pagination for chapter list
   const totalPages = Math.ceil(novel.book.chapterCount / 50);
@@ -20,7 +25,8 @@ async function extractNovel(novelUrl: string): Promise<Novel> {
     const pageUrl = `${novelUrl}&page=${page}`;
     const pageResponse = await fetch(pageUrl);
     const pageData = await pageResponse.json();
-    const pageNovel: Novel = pageData.pageProps as Novel;
+    /** @type {import('../types').Novel} */
+    const pageNovel = pageData.pageProps;
     for (const chapter of pageNovel.chapterList || []) {
       chapterList.push(chapter);
     }
@@ -42,7 +48,8 @@ async function extractNovel(novelUrl: string): Promise<Novel> {
       if (chapResponse.status === 429) {
         throw new Error('Too many requests. Please try again later.');
       }
-      const chapData = await chapResponse.json() as ChaptersResponse;
+      /** @type {import('../types').ChaptersResponse} */
+      const chapData = await chapResponse.json();
       chapter.content = chapData.pageProps.content;
     });
     await Promise.all(promises);
@@ -51,6 +58,10 @@ async function extractNovel(novelUrl: string): Promise<Novel> {
   return novel;
 }
 
+/**
+ * Extracts novel data from the current page URL.
+ * @returns {Promise<import('../types').Novel>} The extracted novel data.
+ */
 async function extractNovelFromCurrentPage() {
   const currentUrl = window.location.href;
   return await extractNovel(currentUrl);

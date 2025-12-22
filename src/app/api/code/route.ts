@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), 'src/lib/browserNovelExtractor.ts');
+    const filePath = path.join(process.cwd(), 'src/lib/browserNovelExtractor.js');
     const content = fs.readFileSync(filePath, 'utf8');
     return NextResponse.json({ content });
   } catch (error) {
