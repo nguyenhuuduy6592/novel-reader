@@ -4,20 +4,31 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getNovel } from '@/lib/indexedDB';
-import { ChapterInfo, Novel } from '@/types';
+import { ChapterInfo } from '@/types';
 
 export default function ChapterPage() {
   const params = useParams();
   const slug = params.slug as string;
   const chapterSlug = params.chapterSlug as string;
   const [chapter, setChapter] = useState<ChapterInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadChapter = async () => {
       const novel = await getNovel(slug);
       if (novel && novel.chapters) {
         const ch = novel.chapters.find(c => c.chapter.slug === chapterSlug);
-        setChapter(ch || null);
+        
+        if (ch) {
+          ch.chapter.content = ch.chapter.content
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => `<p>${line.trim()}</p>`)
+            .join('');
+          setChapter(ch || null);
+        }
+        
+        setIsLoading(false);
       }
     };
     loadChapter();
@@ -27,7 +38,12 @@ export default function ChapterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500 mb-4">Chapter not found</p>
+          {isLoading ? (
+            <p className="text-gray-500">Loading chapter...</p>
+          ) : (
+            <p className="text-red-500">Chapter not found.</p>
+          )}
+          <br />
           <Link href={`/novel/${slug}`} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
             Back to Novel
           </Link>
