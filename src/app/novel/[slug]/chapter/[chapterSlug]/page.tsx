@@ -86,9 +86,16 @@ export default function ChapterPage() {
             <p className="text-red-500">Chapter not found.</p>
           )}
           <br />
-          <Link href={`/novel/${slug}`} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer">
-            Back to Novel
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/" className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+              <HomeIcon />
+              Home
+            </Link>
+            <Link href={`/novel/${slug}`} className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+              <ChevronLeftIcon />
+              Back to Novel
+            </Link>
+          </div>
         </div>
       </div>
     );

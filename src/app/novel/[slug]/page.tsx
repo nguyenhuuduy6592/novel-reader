@@ -43,8 +43,9 @@ export default function NovelPage() {
             <p className="text-red-500">Novel not found.</p>
           )}
           <br />
-          <Link href="/" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-            Go Home
+          <Link href="/" className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+            <HomeIcon />
+            Home
           </Link>
         </div>
       </div>
@@ -52,80 +53,87 @@ export default function NovelPage() {
   }
 
   return (
-    <PageLayout maxWidth="max-w-2xl" padding="py-2 px-1">
-      <div className="bg-white p-2 rounded shadow-sm">
-          <div className="flex justify-between items-start mb-2">
-            <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
-              <HomeIcon />
-              Home
-            </Link>
-            <Link
-              href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
-              className={`px-4 py-2 rounded-md text-sm flex items-center gap-1 transition-colors cursor-pointer ${
-                currentChapterSlug
-                  ? 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700'
-                  : 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700 focus:bg-green-700'
-              }`}
-            >
-              <span>{currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}</span>
-            </Link>
-          </div>
-          <div className="flex flex-col md:flex-row gap-2">
+    <PageLayout>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Novel Details</h1>
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          <HomeIcon />
+          Home
+        </Link>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="flex flex-col lg:flex-row gap-8 mb-8">
+          <div className="flex-shrink-0">
             <Image
               src={novel.book.coverUrl}
               alt={novel.book.name}
-              width={100}
-              height={150}
-              className="w-full md:w-24 h-32 object-cover rounded"
+              width={200}
+              height={300}
+              className="w-48 h-72 object-cover rounded-lg shadow-md hover:opacity-90 transition-opacity duration-200"
             />
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold mb-0.5 truncate">{novel.book.name}</h1>
-              <p className="text-base text-gray-600 mb-1 truncate">by {novel.book.author.name}</p>
-              <div className="mb-1">
-                <span className="text-gray-500 text-xs">
-                  {novel.book.chapterCount} chapters
-                  {currentChapterSlug && (
-                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                      📖 {currentChapterName || ''}
-                    </span>
-                  )}
-                </span>
-              </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold mb-4 line-clamp-2">{novel.book.name}</h1>
+            <p className="text-xl text-gray-600 mb-4">by {novel.book.author.name}</p>
+            <div className="mb-6">
+              <span className="text-lg text-gray-500">
+                {novel.book.chapterCount} chapters
+                {currentChapterSlug && (
+                  <span className="ml-4 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                    📖 Current: {currentChapterName || ''}
+                  </span>
+                )}
+              </span>
+            </div>
+            <Link
+              href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
+              className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-lg transition-colors w-fit ${
+                currentChapterSlug
+                  ? 'bg-blue-500 hover:bg-blue-600'
+                  : 'bg-green-500 hover:bg-green-600'
+              }`}
+            >
+              {currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
+            </Link>
+          </div>
+        </div>
+
+        {novel.chapters && novel.chapters.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-3">
+              <input
+                type="text"
+                placeholder="Search chapters..."
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <h2 className="text-lg font-bold mb-2">Chapters</h2>
+            <div className="space-y-0.5">
+              {novel.chapters
+                .filter((chapterInfo) =>
+                  chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((chapterInfo, index) => (
+                <Link
+                  key={chapterInfo.chapter.slug}
+                  href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
+                  className="block p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-xs"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium truncate">Ch {index + 1}: {chapterInfo.chapter.name}</span>
+                    <span className="text-gray-500 text-xs">→</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
-
-          {novel.chapters && novel.chapters.length > 0 && (
-            <div className="mt-4">
-              <div className="mb-3">
-                <input
-                  type="text"
-                  placeholder="Search chapters..."
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <h2 className="text-lg font-bold mb-2">Chapters</h2>
-              <div className="space-y-0.5">
-                {novel.chapters
-                  .filter((chapterInfo) =>
-                    chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                  .map((chapterInfo, index) => (
-                  <Link
-                    key={chapterInfo.chapter.slug}
-                    href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
-                    className="block p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-xs"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium truncate">Ch {index + 1}: {chapterInfo.chapter.name}</span>
-                      <span className="text-gray-500 text-xs">→</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+        )}
       </div>
     </PageLayout>
   );
