@@ -32,6 +32,10 @@ export interface ChaptersResponse {
 
 export interface ChapterContent {
   chapter: Chapter;
+  title: string;
+  content: string;
+  prevSlug?: string;
+  nextSlug?: string;
 }
 
 export interface ApiResponse<T> {

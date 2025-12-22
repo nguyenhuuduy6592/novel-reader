@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Novel } from '@/types';
 import { getAllNovels } from '@/lib/localStorage';
-import { importNovel } from '@/lib/importNovel';
+import { importNovel, importNovelFromJson } from '@/lib/importNovel';
 
 export default function Home() {
+  const [importMode, setImportMode] = useState<'url' | 'json'>('url');
   const [url, setUrl] = useState('https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/do-de-cua-ta-deu-la-trum-phan-dien.html.json?slug=do-de-cua-ta-deu-la-trum-phan-dien.html');
+  const [json, setJson] = useState('');
   const [novels, setNovels] = useState<Novel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,15 +19,23 @@ export default function Home() {
   }, []);
 
   const handleImport = async () => {
-    if (!url.trim()) return;
+    if (importMode === 'url' && !url.trim()) return;
+    if (importMode === 'json' && !json.trim()) return;
 
     setLoading(true);
     setError('');
 
-    const result = await importNovel(encodeURIComponent(url.trim()));
+    let result;
+    if (importMode === 'url') {
+      result = await importNovel(encodeURIComponent(url.trim()));
+    } else {
+      result = await importNovelFromJson(json.trim());
+    }
+
     if (result.success) {
       setNovels(getAllNovels());
       // setUrl('');
+      // setJson('');
     } else {
       setError(result.error || 'Failed to import novel');
     }
@@ -40,18 +50,53 @@ export default function Home() {
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-semibold mb-4">Import Novel</h2>
+          <div className="mb-4">
+            <label className="mr-4">
+              <input
+                type="radio"
+                value="url"
+                checked={importMode === 'url'}
+                onChange={(e) => setImportMode(e.target.value as 'url' | 'json')}
+              />
+              Import from URL
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="json"
+                checked={importMode === 'json'}
+                onChange={(e) => setImportMode(e.target.value as 'url' | 'json')}
+              />
+              Import from JSON
+            </label>
+            <Link
+              href="/code-display"
+              className="ml-4 text-blue-500 hover:text-blue-700 underline"
+            >
+              View Code
+            </Link>
+          </div>
           <div className="flex gap-4">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter novel URL"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyPress={(e) => e.key === 'Enter' && handleImport()}
-            />
+            {importMode === 'url' ? (
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter novel URL"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyPress={(e) => e.key === 'Enter' && handleImport()}
+              />
+            ) : (
+              <textarea
+                value={json}
+                onChange={(e) => setJson(e.target.value)}
+                placeholder="Paste novel JSON here"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
+              />
+            )}
             <button
               onClick={handleImport}
-              disabled={loading || !url.trim()}
+              disabled={loading || (importMode === 'url' ? !url.trim() : !json.trim())}
               className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Importing...' : 'Import'}

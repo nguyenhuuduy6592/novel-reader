@@ -3,7 +3,29 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ChapterContent } from '@/types';
+import { ChapterContent, Chapter } from '@/types';
+import { getNovel } from '@/lib/localStorage';
+
+function chapterToChapterContent(chapter: Chapter, chapterList: Chapter[]): ChapterContent {
+  const index = chapterList.findIndex(c => c.slug === chapter.slug);
+  const prevChapter = index > 0 ? chapterList[index - 1] : null;
+  const nextChapter = index < chapterList.length - 1 ? chapterList[index + 1] : null;
+
+  let content = chapter.content;
+  // If content doesn't contain HTML tags, treat line breaks as paragraphs
+  content = content
+    .split('\n')
+    .filter(line => line.trim())
+    .map(line => `<p>${line.trim()}</p>`)
+    .join('');
+  return {
+    chapter,
+    title: chapter.name,
+    content,
+    prevSlug: prevChapter?.slug,
+    nextSlug: nextChapter?.slug,
+  };
+}
 
 export default function ChapterPage() {
   const params = useParams();
@@ -21,6 +43,18 @@ export default function ChapterPage() {
     setLoading(true);
     setError('');
 
+    // First, try to get from localStorage
+    const novel = getNovel(slug);
+    if (novel && novel.chapterList) {
+      const localChapter = novel.chapterList.find(c => c.slug === chapterSlug);
+      if (localChapter) {
+        setChapter(chapterToChapterContent(localChapter, novel.chapterList));
+        setLoading(false);
+        return;
+      }
+    }
+
+    // If not in localStorage, fetch from API
     try {
       const response = await fetch(`/api/chapter/${slug}/${chapterSlug}`);
       const data = await response.json();

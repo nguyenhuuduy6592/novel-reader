@@ -51,6 +51,7 @@ export default function NovelPage() {
     <div className="min-h-screen bg-gray-50 py-2 px-1">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white p-2 rounded shadow-sm">
+          <Link href="/" className="text-blue-500 hover:text-blue-700 mb-2 inline-block">← Back to Home</Link>
           <div className="flex flex-col md:flex-row gap-2">
             <img
               src={novel.book.coverUrl}
