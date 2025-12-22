@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ImportIcon, BookOpenIcon } from '@/lib/icons';
 import { Novel } from '@/types';
 import { getAllNovels, getCurrentChapter } from '@/lib/indexedDB';
 import Image from 'next/image';
+import PageLayout from '@/components/PageLayout';
 
 export default function Home() {
   const [novels, setNovels] = useState<{ novel: Novel; currentChapterSlug: string | null; currentChapterName: string | null }[]>([]);
@@ -28,19 +30,19 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Novel Reader</h1>
-          <Link
-            href="/import"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Import Novel
-          </Link>
-        </div>
+    <PageLayout>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Novel Reader</h1>
+        <Link
+          href="/import"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          <ImportIcon />
+          Import Novel
+        </Link>
+      </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">My Novels</h2>
           {novels.length === 0 ? (
             <p className="text-gray-500">No novels imported yet.</p>
@@ -73,12 +75,13 @@ export default function Home() {
                     </p>
                     <Link
                       href={chapterHref}
-                      className={`block px-4 py-2 rounded-md text-white text-center font-medium transition-colors w-full ${
+                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white font-medium transition-colors w-full ${
                         currentChapterSlug
                           ? 'bg-blue-500 hover:bg-blue-600'
                           : 'bg-green-500 hover:bg-green-600'
                       }`}
                     >
+                      <BookOpenIcon />
                       {currentChapterSlug ? 'Continue Reading' : 'Read Novel'}
                     </Link>
                   </div>
@@ -86,8 +89,7 @@ export default function Home() {
               })}
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

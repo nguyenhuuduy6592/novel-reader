@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { HomeIcon, ImportIcon } from '@/lib/icons';
 import { importNovelFromJson } from '@/lib/importNovel';
+import PageLayout from '@/components/PageLayout';
 
 export default function ImportPage() {
   const [json, setJson] = useState('');
@@ -59,23 +61,20 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Import Novel</h1>
-          <Link
-            href="/"
-            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer"
-          >
-            Back to Home
-          </Link>
-        </div>
+    <PageLayout>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Import Novel</h1>
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer"
+        >
+          <HomeIcon />
+          Home
+        </Link>
+      </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Import from JSON
-            </label>
             <Link
               href="/code-display"
               className="text-blue-500 hover:text-blue-700 underline"
@@ -102,8 +101,9 @@ export default function ImportPage() {
               <button
                 onClick={handleImport}
                 disabled={loading || !(json.trim() || fileContent)}
-                className="px-6 py-16 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed self-start md:self-auto whitespace-nowrap"
+                className="flex items-center gap-2 px-6 py-16 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed self-start md:self-auto whitespace-nowrap"
               >
+                <ImportIcon />
                 {loading ? 'Importing...' : 'Import'}
               </button>
             </div>
@@ -114,8 +114,7 @@ export default function ImportPage() {
               Novel imported successfully!
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

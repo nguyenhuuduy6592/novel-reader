@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getNovel, saveCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
-import { HomeIcon, ArrowLeftIcon } from '@/lib/icons';
+import { HomeIcon, ChevronLeftIcon, ChevronRightIcon } from '@/lib/icons';
+import PageLayout from '@/components/PageLayout';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -94,16 +95,15 @@ export default function ChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-4 sm:py-8 sm:px-4">
-      <div className="max-w-4xl mx-auto sm:mx-auto">
-        <div className="mb-6 flex justify-between items-center">
+    <PageLayout padding="pb-4 sm:py-8 sm:px-4">
+      <div className="mb-6 flex justify-between items-center">
           <div className="flex gap-2">
             <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
               <HomeIcon />
               Home
             </Link>
             <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline flex items-center gap-1">
-              <ArrowLeftIcon />
+              <ChevronLeftIcon />
               Novel
             </Link>
           </div>
@@ -245,21 +245,22 @@ export default function ChapterPage() {
           {chapter.prevChapter && (
             <Link
               href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
             >
-              ← Previous Chapter
+              <ChevronLeftIcon />
+              Previous Chapter
             </Link>
           )}
           {chapter.nextChapter && (
             <Link
               href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
             >
-              Next Chapter →
+              Next Chapter
+              <ChevronRightIcon />
             </Link>
           )}
-        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

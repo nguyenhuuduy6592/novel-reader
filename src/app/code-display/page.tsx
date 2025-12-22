@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { HomeIcon, ImportIcon } from '@/lib/icons';
+import PageLayout from '@/components/PageLayout';
 
 export default function Page() {
   const [content, setContent] = useState('');
@@ -39,46 +40,50 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="p-5">
+      <PageLayout padding="p-5">
         <h1 className="text-3xl font-bold mb-4">Browser Novel Extractor Code</h1>
         <p>Loading...</p>
-      </div>
+      </PageLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="p-5">
+      <PageLayout padding="p-5">
         <h1 className="text-3xl font-bold mb-4">Browser Novel Extractor Code</h1>
         <p className="text-red-500">{error}</p>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="p-5">
-      <div className="mb-6 flex gap-2">
-        <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
-          <HomeIcon />
-          Home
-        </Link>
-        <Link href="/import" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
-          <ImportIcon />
-          Import
-        </Link>
+    <PageLayout padding="p-5">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Browser Novel Extractor Code</h1>
+        <div className="flex gap-2">
+          <Link href="/" className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer">
+            <HomeIcon />
+            Home
+          </Link>
+          <Link href="/import" className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer">
+            <ImportIcon />
+            Import
+          </Link>
+        </div>
       </div>
-      <h1 className="text-3xl font-bold mb-4">Browser Novel Extractor Code</h1>
-      <button
-        onClick={handleCopy}
-        className={`mb-2.5 px-5 py-2.5 text-white rounded cursor-pointer border-none ${copied ? 'bg-green-500 hover:bg-green-600 active:bg-green-700 focus:bg-green-700' : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700'}`}
-      >
-        {copied ? 'Copied!' : 'Copy Code'}
-      </button>
-      <textarea
-        value={content}
-        readOnly
-        className="w-full h-[80vh] font-mono text-sm p-2.5 border border-gray-300 rounded resize-none"
-      />
-    </div>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <button
+          onClick={handleCopy}
+          className={`mb-2.5 px-5 py-2.5 text-white rounded cursor-pointer border-none ${copied ? 'bg-green-500 hover:bg-green-600 active:bg-green-700 focus:bg-green-700' : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700'}`}
+        >
+          {copied ? 'Copied!' : 'Copy Code'}
+        </button>
+        <textarea
+          value={content}
+          readOnly
+          className="w-full h-[80vh] font-mono text-sm p-2.5 border border-gray-300 rounded resize-none"
+        />
+      </div>
+    </PageLayout>
   );
 }

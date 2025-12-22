@@ -7,6 +7,7 @@ import { getNovel, getCurrentChapter } from '@/lib/indexedDB';
 import { Novel } from '@/types';
 import Image from 'next/image';
 import { HomeIcon } from '@/lib/icons';
+import PageLayout from '@/components/PageLayout';
 
 export default function NovelPage() {
   const params = useParams();
@@ -51,9 +52,8 @@ export default function NovelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-2 px-1">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white p-2 rounded shadow-sm">
+    <PageLayout maxWidth="max-w-2xl" padding="py-2 px-1">
+      <div className="bg-white p-2 rounded shadow-sm">
           <div className="flex justify-between items-start mb-2">
             <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
               <HomeIcon />
@@ -126,8 +126,7 @@ export default function NovelPage() {
               </div>
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
