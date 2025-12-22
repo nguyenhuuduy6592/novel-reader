@@ -1,10 +1,9 @@
-import { GenericResponse, Novel } from '@/types';
+import { Novel } from '@/types';
 import { saveNovel } from './localStorage';
 
 export async function importNovelFromJson(jsonString: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const data = JSON.parse(jsonString) as GenericResponse<Novel>;
-    const novel = data.pageProps;
+    const novel = JSON.parse(jsonString) as Novel;
 
     // Process coverUrl like the API does
     novel.book.coverUrl = novel.book.coverUrl.startsWith('http')

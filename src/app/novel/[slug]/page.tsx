@@ -31,6 +31,8 @@ export default function NovelPage() {
             <Image
               src={novel.book.coverUrl}
               alt={novel.book.name}
+              width={100}
+              height={150}
               className="w-full md:w-24 h-32 object-cover rounded"
             />
             <div className="flex-1 min-w-0">

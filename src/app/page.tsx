@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Novel } from '@/types';
 import { getAllNovels } from '@/lib/localStorage';
@@ -9,9 +9,14 @@ import Image from 'next/image';
 
 export default function Home() {
   const [json, setJson] = useState('');
-  const [novels, setNovels] = useState<Novel[]>(getAllNovels());
+  const [novels, setNovels] = useState<Novel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNovels(getAllNovels());
+  }, []);
 
   const handleImport = async () => {
     setLoading(true);
@@ -75,7 +80,10 @@ export default function Home() {
                   <Image
                     src={novel.book.coverUrl}
                     alt={novel.book.name}
+                    width={100}
+                    height={150}
                     className="w-full h-48 object-cover rounded-md mb-4"
+                    priority={true}
                   />
                   <h3 className="font-semibold text-lg mb-2">{novel.book.name}</h3>
                   <p className="text-gray-600 mb-2">by {novel.book.author.name}</p>
