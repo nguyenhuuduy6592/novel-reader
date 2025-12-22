@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { getNovel } from '@/lib/indexedDB';
+import { getNovel, getCurrentChapter } from '@/lib/indexedDB';
 import { Novel } from '@/types';
 import Image from 'next/image';
 
@@ -11,6 +11,8 @@ export default function NovelPage() {
   const params = useParams();
   const slug = params.slug as string;
   const [novel, setNovel] = useState<Novel | null>(null);
+  const [currentChapterSlug, setCurrentChapterSlug] = useState<string | null>(null);
+  const [currentChapterName, setCurrentChapterName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -18,6 +20,12 @@ export default function NovelPage() {
     const loadNovel = async () => {
       const n = await getNovel(slug);
       setNovel(n);
+      const currentSlug = await getCurrentChapter(slug);
+      const currentChapterName = currentSlug ?
+        n?.chapters?.find(c => c.chapter.slug === currentSlug)?.chapter.name || null
+        : null;
+      setCurrentChapterSlug(currentSlug);
+      setCurrentChapterName(currentChapterName);
       setIsLoading(false);
     };
     loadNovel();
@@ -48,10 +56,14 @@ export default function NovelPage() {
           <div className="flex justify-between items-start mb-2">
             <Link href="/" className="text-blue-500 hover:text-blue-700 inline-block">← Back to Home</Link>
             <Link
-              href={`/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm flex items-center gap-1"
+              href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
+              className={`px-4 py-2 rounded-md text-sm flex items-center gap-1 transition-colors ${
+                currentChapterSlug
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
             >
-              <span>🎯 Start Reading</span>
+              <span>{currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}</span>
             </Link>
           </div>
           <div className="flex flex-col md:flex-row gap-2">
@@ -66,7 +78,14 @@ export default function NovelPage() {
               <h1 className="text-xl font-bold mb-0.5 truncate">{novel.book.name}</h1>
               <p className="text-base text-gray-600 mb-1 truncate">by {novel.book.author.name}</p>
               <div className="mb-1">
-                <span className="text-gray-500 text-xs">{novel.book.chapterCount} chapters</span>
+                <span className="text-gray-500 text-xs">
+                  {novel.book.chapterCount} chapters
+                  {currentChapterSlug && (
+                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                      📖 {currentChapterName || ''}
+                    </span>
+                  )}
+                </span>
               </div>
             </div>
           </div>

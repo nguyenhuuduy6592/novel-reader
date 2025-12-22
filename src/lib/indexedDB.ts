@@ -1,7 +1,7 @@
 import { Novel, ChapterInfo } from '@/types';
 
 const DB_NAME = 'novel-reader';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface StoredChapter {
   id: string;
@@ -22,11 +22,16 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('novels')) {
         db.createObjectStore('novels', { keyPath: 'book.slug' });
       }
-
+    
       // Chapters store
       if (!db.objectStoreNames.contains('chapters')) {
         const chaptersStore = db.createObjectStore('chapters', { keyPath: 'id' });
         chaptersStore.createIndex('novelSlug', 'novelSlug', { unique: false });
+      }
+    
+      // Current chapter store
+      if (!db.objectStoreNames.contains('currentChapters')) {
+        const currentChaptersStore = db.createObjectStore('currentChapters', { keyPath: 'novelSlug' });
       }
     };
   });
@@ -98,7 +103,7 @@ export async function removeNovel(slug: string): Promise<void> {
   if (typeof window === 'undefined') return;
 
   const db = await openDB();
-  const tx = db.transaction(['novels', 'chapters'], 'readwrite');
+  const tx = db.transaction(['novels', 'chapters', 'currentChapters'], 'readwrite');
 
   // Remove novel
   const novelsStore = tx.objectStore('novels');
@@ -124,6 +129,14 @@ export async function removeNovel(slug: string): Promise<void> {
     });
   }
 
+  // Remove current chapter
+  const currentChaptersStore = tx.objectStore('currentChapters');
+  await new Promise<void>((resolve, reject) => {
+    const request = currentChaptersStore.delete(slug);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+
   db.close();
 }
 
@@ -140,6 +153,46 @@ export async function listChapters(novelSlug: string): Promise<ChapterInfo[]> {
     request.onsuccess = () => {
       const storedChapters = request.result as StoredChapter[];
       resolve(storedChapters.map(sc => sc.chapter));
+    };
+    request.onerror = () => reject(request.error);
+  }).finally(() => db.close());
+}
+
+interface CurrentChapter {
+  novelSlug: string;
+  chapterSlug: string;
+}
+
+export async function saveCurrentChapter(novelSlug: string, chapterSlug: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const db = await openDB();
+  const tx = db.transaction(['currentChapters'], 'readwrite');
+  const store = tx.objectStore('currentChapters');
+  
+  const currentChapter: CurrentChapter = { novelSlug, chapterSlug };
+  
+  await new Promise<void>((resolve, reject) => {
+    const request = store.put(currentChapter);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+  
+  db.close();
+}
+
+export async function getCurrentChapter(novelSlug: string): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+
+  const db = await openDB();
+  const tx = db.transaction(['currentChapters'], 'readonly');
+  const store = tx.objectStore('currentChapters');
+  
+  return new Promise<string | null>((resolve, reject) => {
+    const request = store.get(novelSlug);
+    request.onsuccess = () => {
+      const result = request.result as CurrentChapter | undefined;
+      resolve(result ? result.chapterSlug : null);
     };
     request.onerror = () => reject(request.error);
   }).finally(() => db.close());

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getNovel } from '@/lib/indexedDB';
+import { getNovel, saveCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
 
 export default function ChapterPage() {
@@ -40,6 +40,11 @@ export default function ChapterPage() {
       }
     };
     loadChapter();
+  }, [slug, chapterSlug]);
+
+  // Save current chapter on mount
+  useEffect(() => {
+    saveCurrentChapter(slug, chapterSlug);
   }, [slug, chapterSlug]);
 
   // Load/save theme config

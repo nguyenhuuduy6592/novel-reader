@@ -39,3 +39,8 @@ export interface ReadingThemeConfig {
   lineHeight: number; // default 1.6
   padding: 'compact' | 'normal' | 'wide' | 'full'; // default 'normal'
 }
+
+export interface CurrentChapter {
+  novelSlug: string;
+  chapterSlug: string;
+}
