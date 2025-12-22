@@ -28,6 +28,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <footer className="bg-black/80 backdrop-blur-sm border-t border-gray-800 text-center py-2 text-xs text-gray-400 w-full">
+          v{process.env.npm_package_version || '0.1.0'}
+        </footer>
       </body>
     </html>
   );
