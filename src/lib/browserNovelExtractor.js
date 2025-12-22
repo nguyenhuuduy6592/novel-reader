@@ -60,7 +60,7 @@ async function extractNovel(novelUrl) {
       if (chapResponse.status === 429) {
         throw new Error('Too many requests. Please try again later.');
       }
-      /** @type {import('../types').ChaptersResponse} */
+      /** @type {import('../types').GenericResponse} */
       const chapData = await chapResponse.json();
       chapter.content = chapData.pageProps.content;
     });

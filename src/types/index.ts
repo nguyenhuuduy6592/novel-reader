@@ -1,13 +1,13 @@
-export interface NovelResponse {
-  pageProps: Novel;
+export interface GenericResponse<T> {
+  pageProps: T;
 }
 
 export interface Novel {
-  book: BookInfo
-  chapterList?: Chapter[];
+  book: NovelInfo
+  chapterList?: ChapterInfo[];
 }
 
-export interface BookInfo {
+export interface NovelInfo {
   bookId: number;
   slug: string;
   coverUrl: string;
@@ -20,26 +20,14 @@ export interface AuthorInfo {
   name: string;
 }
 
-export interface Chapter {
-  slug: string;
+export interface ChapterContent {
+  slug?: string | undefined;
   name: string;
   content: string;
 }
 
-export interface ChaptersResponse {
-  pageProps: ChapterContent;
-}
-
-export interface ChapterContent {
-  chapter: Chapter;
-  title: string;
-  content: string;
-  prevSlug?: string;
-  nextSlug?: string;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+export interface ChapterInfo {
+  chapter: ChapterContent;
+  nextChapter?: ChapterContent | undefined;
+  prevChapter?: ChapterContent | undefined;
 }

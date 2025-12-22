@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function Page() {
   const [content, setContent] = useState('');
@@ -55,7 +56,7 @@ export default function Page() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <a href="/" style={{ marginBottom: '10px', display: 'inline-block' }}>← Back to Home</a>
+      <Link href="/" style={{ marginBottom: '10px', display: 'inline-block' }}>← Back to Home</Link>
       <h1>Browser Novel Extractor Code</h1>
       <button
         onClick={handleCopy}
