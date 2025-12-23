@@ -300,13 +300,16 @@ export default function ChapterPage() {
           </h1>
 
           <div
-            className="prose prose-lg max-w-none [&>p]:mb-6"
+            className="prose prose-lg max-w-none"
             style={{
               fontFamily: 'var(--reading-font-family)',
               lineHeight: 'var(--reading-line-height)'
             }}
-            dangerouslySetInnerHTML={{ __html: chapter.chapter.content }}
-          />
+          >
+            {chapter.chapter.content.split('\n').filter(Boolean).map((paragraph, index) => (
+              <p key={index} dangerouslySetInnerHTML={{ __html: paragraph }} />
+            ))}
+          </div>
         </div>
 
         <div className="mt-6 flex justify-center gap-2">
