@@ -20,7 +20,7 @@ export default function ImportPage() {
         const text = await file.text();
         setFileContent(text);
         setJson('');
-      } catch (error) {
+      } catch {
         setError('Failed to read file');
       }
     }

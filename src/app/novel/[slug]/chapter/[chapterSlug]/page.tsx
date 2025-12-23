@@ -54,7 +54,9 @@ export default function ChapterPage() {
     const saved = localStorage.getItem('readingTheme');
     if (saved) {
       try {
-        setThemeConfig(JSON.parse(saved));
+        const parsed = JSON.parse(saved)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setThemeConfig(parsed);
       } catch {
         // invalid json, use default
       }
@@ -150,7 +152,7 @@ export default function ChapterPage() {
                   value={themeConfig.background}
                   onChange={(e) => setThemeConfig({
                     ...themeConfig,
-                    background: e.target.value as any
+                    background: e.target.value as ReadingThemeConfig['background']
                   })}
                   className="w-full p-2 border rounded-md"
                 >
@@ -166,7 +168,7 @@ export default function ChapterPage() {
                   value={themeConfig.fontFamily}
                   onChange={(e) => setThemeConfig({
                     ...themeConfig,
-                    fontFamily: e.target.value as any
+                    fontFamily: e.target.value as ReadingThemeConfig['fontFamily']
                   })}
                   className="w-full p-2 border rounded-md"
                 >
@@ -219,7 +221,7 @@ export default function ChapterPage() {
                   value={themeConfig.padding}
                   onChange={(e) => setThemeConfig({
                     ...themeConfig,
-                    padding: e.target.value as any
+                    padding: e.target.value as ReadingThemeConfig['padding']
                   })}
                   className="w-full p-2 border rounded-md"
                 >

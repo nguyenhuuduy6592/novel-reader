@@ -31,7 +31,7 @@ function openDB(): Promise<IDBDatabase> {
     
       // Current chapter store
       if (!db.objectStoreNames.contains('currentChapters')) {
-        const currentChaptersStore = db.createObjectStore('currentChapters', { keyPath: 'novelSlug' });
+        db.createObjectStore('currentChapters', { keyPath: 'novelSlug' });
       }
     };
   });
