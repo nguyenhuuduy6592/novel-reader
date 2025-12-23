@@ -1,20 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
-import { getNovel, saveCurrentChapter } from '@/lib/indexedDB';
+import { useParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getChapter, getNovel, saveCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 
 export default function ChapterPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params.slug as string;
   const chapterSlug = params.chapterSlug as string;
   const [chapter, setChapter] = useState<ChapterInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [themeConfig, setThemeConfig] = useState<ReadingThemeConfig>({
     background: 'sepia',
     fontFamily: 'sans-serif',
@@ -23,34 +23,58 @@ export default function ChapterPage() {
     padding: 'compact'
   });
   const [showSettings, setShowSettings] = useState(false);
+  const loadingRef = useRef<string | null>(null);
 
-  const loadChapter = useCallback(async (targetSlug: string, updateUrl = true) => {
+  const loadChapter = useCallback(async (targetSlug: string) => {
+    // Cancel if this request is stale
+    const requestId = `${slug}-${targetSlug}`;
+    loadingRef.current = requestId;
+
     setIsLoading(true);
-    const novel = await getNovel(slug);
-    if (novel && novel.chapters) {
-      const ch = novel.chapters.find(c => c.chapter.slug === targetSlug);
-      
+    setError(null);
+
+    try {
+      const ch = await getChapter(slug, targetSlug);
+
+      // Check if this request is still valid
+      if (loadingRef.current !== requestId) return;
+
       if (ch) {
-        ch.chapter.content = ch.chapter.content
-          .split('\n')
-          .filter(line => line.trim())
-          .map(line => `<p>${line.trim()}</p>`)
-          .join('');
-        setChapter(ch || null);
-        saveCurrentChapter(slug, targetSlug);
-        if (updateUrl) {
-          router.replace(`/novel/${slug}/chapter/${targetSlug}`);
+        setChapter(ch);
+        await saveCurrentChapter(slug, targetSlug);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Fall back to getNovel for backwards compatibility with old data
+        const novel = await getNovel(slug);
+        if (loadingRef.current !== requestId) return;
+
+        if (novel && novel.chapters) {
+          const foundChapter = novel.chapters.find(c => c.chapter.slug === targetSlug);
+          if (foundChapter) {
+            setChapter(foundChapter);
+            await saveCurrentChapter(slug, targetSlug);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            setError('Chapter not found');
+          }
+        } else {
+          setError('Novel not found');
         }
       }
-      
-      setIsLoading(false);
+    } catch (err) {
+      if (loadingRef.current === requestId) {
+        setError('Failed to load chapter');
+      }
+    } finally {
+      if (loadingRef.current === requestId) {
+        setIsLoading(false);
+      }
     }
-  }, [slug, router]);
+  }, [slug]);
 
   useEffect(() => {
-    loadChapter(chapterSlug, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, chapterSlug]);
+    loadChapter(chapterSlug);
+  }, [slug, chapterSlug, loadChapter]);
 
 
 
@@ -72,7 +96,7 @@ export default function ChapterPage() {
     document.documentElement.style.setProperty('--reading-font-size', `${themeConfig.fontSize}px`);
     document.documentElement.style.setProperty('--reading-line-height', `${themeConfig.lineHeight}`);
     document.documentElement.style.setProperty('--reading-padding', `var(--padding-${themeConfig.padding})`);
-    
+
     // Set font family
     const fontMap: Record<string, string> = {
       'serif': 'var(--reading-font-serif)',
@@ -82,17 +106,39 @@ export default function ChapterPage() {
     document.documentElement.style.setProperty('--reading-font-family', fontMap[themeConfig.fontFamily]);
   }, [themeConfig]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && chapter?.prevChapter?.slug) {
+        loadChapter(chapter.prevChapter.slug);
+      } else if (e.key === 'ArrowRight' && chapter?.nextChapter?.slug) {
+        loadChapter(chapter.nextChapter.slug);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [chapter, loadChapter]);
+
   if (chapter === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           {isLoading ? (
-            <p className="text-gray-500">Loading chapter...</p>
+            <>
+              <div className="animate-pulse flex flex-col items-center gap-4">
+                <div className="h-4 bg-gray-300 rounded w-32"></div>
+                <div className="h-4 bg-gray-300 rounded w-24"></div>
+              </div>
+              <p className="text-gray-500 mt-4">Loading chapter...</p>
+            </>
           ) : (
-            <p className="text-red-500">Chapter not found.</p>
+            <>
+              <p className="text-red-500">{error || 'Chapter not found.'}</p>
+            </>
           )}
           <br />
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center">
             <Link href="/" className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
               <HomeIcon />
               Home
@@ -124,38 +170,39 @@ export default function ChapterPage() {
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
+              aria-expanded={showSettings}
+              aria-controls="settings-panel"
             >
               {showSettings ? 'Hide' : 'Theme'}
             </button>
-            {chapter.prevChapter?.slug && (() => {
-              const prevSlug = chapter.prevChapter.slug
-              return (
-                <button
-                  onClick={() => loadChapter(prevSlug)}
-                  disabled={isLoading}
-                  className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-              )
-            })()}
-            {chapter.nextChapter?.slug && (() => {
-              const nextSlug = chapter.nextChapter.slug
-              return (
-                <button
-                  onClick={() => loadChapter(nextSlug)}
-                  disabled={isLoading}
-                  className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              )
-            })()}
+            {chapter.prevChapter?.slug && (
+              <button
+                onClick={() => loadChapter(chapter.prevChapter!.slug!)}
+                disabled={isLoading}
+                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous chapter"
+              >
+                Previous
+              </button>
+            )}
+            {chapter.nextChapter?.slug && (
+              <button
+                onClick={() => loadChapter(chapter.nextChapter!.slug!)}
+                disabled={isLoading}
+                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next chapter"
+              >
+                Next
+              </button>
+            )}
           </div>
         </div>
 
         {showSettings && (
-          <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+          <div
+            id="settings-panel"
+            className="mb-6 p-4 bg-gray-100 rounded-lg animate-in slide-in-from-top-2 duration-200 ease-out"
+          >
             <h3 className="font-bold mb-3 text-lg">Reading Settings</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
               <div>
@@ -247,7 +294,7 @@ export default function ChapterPage() {
           </div>
         )}
 
-        <div className={`reading-${themeConfig.background} sm:rounded-lg sm:shadow-md reading-content`}>
+        <div className={`reading-${themeConfig.background} sm:rounded-lg sm:shadow-md reading-content min-h-[50vh] ${isLoading ? 'opacity-50' : ''}`}>
           <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center pb-4 border-b border-current/20">
             {chapter.chapter.name}
           </h1>
@@ -263,32 +310,28 @@ export default function ChapterPage() {
         </div>
 
         <div className="mt-6 flex justify-center gap-2">
-          {chapter.prevChapter?.slug && (() => {
-            const prevSlug = chapter.prevChapter.slug
-            return (
-              <button
-                onClick={() => loadChapter(prevSlug)}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeftIcon />
-                Previous Chapter
-              </button>
-            )
-          })()}
-          {chapter.nextChapter?.slug && (() => {
-            const nextSlug = chapter.nextChapter.slug
-            return (
-              <button
-                onClick={() => loadChapter(nextSlug)}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next Chapter
-                <ChevronRightIcon />
-              </button>
-            )
-          })()}
+          {chapter.prevChapter?.slug && (
+            <button
+              onClick={() => loadChapter(chapter.prevChapter!.slug!)}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Previous chapter"
+            >
+              <ChevronLeftIcon />
+              Previous Chapter
+            </button>
+          )}
+          {chapter.nextChapter?.slug && (
+            <button
+              onClick={() => loadChapter(chapter.nextChapter!.slug!)}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Next chapter"
+            >
+              Next Chapter
+              <ChevronRightIcon />
+            </button>
+          )}
       </div>
     </PageLayout>
   );
