@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import { getNovel, saveCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon } from '@/lib/icons';
@@ -10,6 +10,7 @@ import PageLayout from '@/components/PageLayout';
 
 export default function ChapterPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
   const chapterSlug = params.chapterSlug as string;
   const [chapter, setChapter] = useState<ChapterInfo | null>(null);
@@ -23,31 +24,35 @@ export default function ChapterPage() {
   });
   const [showSettings, setShowSettings] = useState(false);
 
-  useEffect(() => {
-    const loadChapter = async () => {
-      const novel = await getNovel(slug);
-      if (novel && novel.chapters) {
-        const ch = novel.chapters.find(c => c.chapter.slug === chapterSlug);
-        
-        if (ch) {
-          ch.chapter.content = ch.chapter.content
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => `<p>${line.trim()}</p>`)
-            .join('');
-          setChapter(ch || null);
+  const loadChapter = useCallback(async (targetSlug: string, updateUrl = true) => {
+    setIsLoading(true);
+    const novel = await getNovel(slug);
+    if (novel && novel.chapters) {
+      const ch = novel.chapters.find(c => c.chapter.slug === targetSlug);
+      
+      if (ch) {
+        ch.chapter.content = ch.chapter.content
+          .split('\n')
+          .filter(line => line.trim())
+          .map(line => `<p>${line.trim()}</p>`)
+          .join('');
+        setChapter(ch || null);
+        saveCurrentChapter(slug, targetSlug);
+        if (updateUrl) {
+          router.replace(`/novel/${slug}/chapter/${targetSlug}`);
         }
-        
-        setIsLoading(false);
       }
-    };
-    loadChapter();
+      
+      setIsLoading(false);
+    }
+  }, [slug, router]);
+
+  useEffect(() => {
+    loadChapter(chapterSlug, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, chapterSlug]);
 
-  // Save current chapter on mount
-  useEffect(() => {
-    saveCurrentChapter(slug, chapterSlug);
-  }, [slug, chapterSlug]);
+
 
   // Load/save theme config
   useEffect(() => {
@@ -55,7 +60,6 @@ export default function ChapterPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setThemeConfig(parsed);
       } catch {
         // invalid json, use default
@@ -123,22 +127,30 @@ export default function ChapterPage() {
             >
               {showSettings ? 'Hide' : 'Theme'}
             </button>
-            {chapter.prevChapter && (
-              <Link
-                href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm"
-              >
-                Previous
-              </Link>
-            )}
-            {chapter.nextChapter && (
-              <Link
-                href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm"
-              >
-                Next
-              </Link>
-            )}
+            {chapter.prevChapter?.slug && (() => {
+              const prevSlug = chapter.prevChapter.slug
+              return (
+                <button
+                  onClick={() => loadChapter(prevSlug)}
+                  disabled={isLoading}
+                  className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+              )
+            })()}
+            {chapter.nextChapter?.slug && (() => {
+              const nextSlug = chapter.nextChapter.slug
+              return (
+                <button
+                  onClick={() => loadChapter(nextSlug)}
+                  disabled={isLoading}
+                  className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              )
+            })()}
           </div>
         </div>
 
@@ -251,24 +263,32 @@ export default function ChapterPage() {
         </div>
 
         <div className="mt-6 flex justify-center gap-2">
-          {chapter.prevChapter && (
-            <Link
-              href={`/novel/${slug}/chapter/${chapter.prevChapter.slug}`}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
-            >
-              <ChevronLeftIcon />
-              Previous Chapter
-            </Link>
-          )}
-          {chapter.nextChapter && (
-            <Link
-              href={`/novel/${slug}/chapter/${chapter.nextChapter.slug}`}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
-            >
-              Next Chapter
-              <ChevronRightIcon />
-            </Link>
-          )}
+          {chapter.prevChapter?.slug && (() => {
+            const prevSlug = chapter.prevChapter.slug
+            return (
+              <button
+                onClick={() => loadChapter(prevSlug)}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeftIcon />
+                Previous Chapter
+              </button>
+            )
+          })()}
+          {chapter.nextChapter?.slug && (() => {
+            const nextSlug = chapter.nextChapter.slug
+            return (
+              <button
+                onClick={() => loadChapter(nextSlug)}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next Chapter
+                <ChevronRightIcon />
+              </button>
+            )
+          })()}
       </div>
     </PageLayout>
   );
