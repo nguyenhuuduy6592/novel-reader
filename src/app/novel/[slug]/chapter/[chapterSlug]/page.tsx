@@ -3,10 +3,19 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getChapter, getNovel, saveCurrentChapter } from '@/lib/indexedDB';
+import { getChapter, saveCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
+import { NavButton } from '@/components/NavButton';
+import { ThemeSelect } from '@/components/ThemeSelect';
+import {
+  BACKGROUND_OPTIONS,
+  FONT_OPTIONS,
+  FONT_SIZE_OPTIONS,
+  LINE_HEIGHT_OPTIONS,
+  PADDING_OPTIONS,
+} from '@/constants/theme';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -44,22 +53,7 @@ export default function ChapterPage() {
         await saveCurrentChapter(slug, targetSlug);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        // Fall back to getNovel for backwards compatibility with old data
-        const novel = await getNovel(slug);
-        if (loadingRef.current !== requestId) return;
-
-        if (novel && novel.chapters) {
-          const foundChapter = novel.chapters.find(c => c.chapter.slug === targetSlug);
-          if (foundChapter) {
-            setChapter(foundChapter);
-            await saveCurrentChapter(slug, targetSlug);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          } else {
-            setError('Chapter not found');
-          }
-        } else {
-          setError('Novel not found');
-        }
+        setError('Chapter not found');
       }
     } catch (err) {
       if (loadingRef.current === requestId) {
@@ -76,17 +70,15 @@ export default function ChapterPage() {
     loadChapter(chapterSlug);
   }, [slug, chapterSlug, loadChapter]);
 
-
-
-  // Load/save theme config
+  // Load theme config on mount
   useEffect(() => {
     const saved = localStorage.getItem('readingTheme');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved)
+        const parsed = JSON.parse(saved);
         setThemeConfig(parsed);
       } catch {
-        // invalid json, use default
+        // Invalid JSON, use defaults
       }
     }
   }, []);
@@ -176,24 +168,20 @@ export default function ChapterPage() {
               {showSettings ? 'Hide' : 'Theme'}
             </button>
             {chapter.prevChapter?.slug && (
-              <button
+              <NavButton
+                icon="Previous"
                 onClick={() => loadChapter(chapter.prevChapter!.slug!)}
                 disabled={isLoading}
-                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous chapter"
-              >
-                Previous
-              </button>
+                ariaLabel="Previous chapter"
+              />
             )}
             {chapter.nextChapter?.slug && (
-              <button
+              <NavButton
+                icon="Next"
                 onClick={() => loadChapter(chapter.nextChapter!.slug!)}
                 disabled={isLoading}
-                className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 active:bg-gray-700 focus:bg-gray-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next chapter"
-              >
-                Next
-              </button>
+                ariaLabel="Next chapter"
+              />
             )}
           </div>
         </div>
@@ -205,96 +193,41 @@ export default function ChapterPage() {
           >
             <h3 className="font-bold mb-3 text-lg">Reading Settings</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">Background</label>
-                <select
-                  value={themeConfig.background}
-                  onChange={(e) => setThemeConfig({
-                    ...themeConfig,
-                    background: e.target.value as ReadingThemeConfig['background']
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="sepia">Sepia</option>
-                  <option value="night">Night</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Font</label>
-                <select
-                  value={themeConfig.fontFamily}
-                  onChange={(e) => setThemeConfig({
-                    ...themeConfig,
-                    fontFamily: e.target.value as ReadingThemeConfig['fontFamily']
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="serif">Serif</option>
-                  <option value="sans-serif">Sans</option>
-                  <option value="monospace">Mono</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Size</label>
-                <select
-                  value={themeConfig.fontSize}
-                  onChange={(e) => setThemeConfig({
-                    ...themeConfig,
-                    fontSize: parseInt(e.target.value)
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value={12}>12px</option>
-                  <option value={14}>14px</option>
-                  <option value={16}>16px</option>
-                  <option value={18}>18px</option>
-                  <option value={20}>20px</option>
-                  <option value={22}>22px</option>
-                  <option value={24}>24px</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Line Height</label>
-                <select
-                  value={themeConfig.lineHeight}
-                  onChange={(e) => setThemeConfig({
-                    ...themeConfig,
-                    lineHeight: parseFloat(e.target.value)
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value={1.2}>1.2</option>
-                  <option value={1.4}>1.4</option>
-                  <option value={1.5}>1.5</option>
-                  <option value={1.6}>1.6</option>
-                  <option value={1.7}>1.7</option>
-                  <option value={1.8}>1.8</option>
-                  <option value={2.0}>2.0</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Padding</label>
-                <select
-                  value={themeConfig.padding}
-                  onChange={(e) => setThemeConfig({
-                    ...themeConfig,
-                    padding: e.target.value as ReadingThemeConfig['padding']
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="compact">Compact</option>
-                  <option value="normal">Normal</option>
-                  <option value="wide">Wide</option>
-                  <option value="full">Full</option>
-                </select>
-              </div>
+              <ThemeSelect
+                label="Background"
+                value={themeConfig.background}
+                onChange={(v) => setThemeConfig({ ...themeConfig, background: v as ReadingThemeConfig['background'] })}
+                options={BACKGROUND_OPTIONS}
+              />
+              <ThemeSelect
+                label="Font"
+                value={themeConfig.fontFamily}
+                onChange={(v) => setThemeConfig({ ...themeConfig, fontFamily: v as ReadingThemeConfig['fontFamily'] })}
+                options={FONT_OPTIONS}
+              />
+              <ThemeSelect
+                label="Size"
+                value={themeConfig.fontSize}
+                onChange={(v) => setThemeConfig({ ...themeConfig, fontSize: parseInt(v) })}
+                options={FONT_SIZE_OPTIONS}
+              />
+              <ThemeSelect
+                label="Line Height"
+                value={themeConfig.lineHeight}
+                onChange={(v) => setThemeConfig({ ...themeConfig, lineHeight: parseFloat(v) })}
+                options={LINE_HEIGHT_OPTIONS}
+              />
+              <ThemeSelect
+                label="Padding"
+                value={themeConfig.padding}
+                onChange={(v) => setThemeConfig({ ...themeConfig, padding: v as ReadingThemeConfig['padding'] })}
+                options={PADDING_OPTIONS}
+              />
             </div>
           </div>
         )}
 
-        <div className={`reading-${themeConfig.background} sm:rounded-lg sm:shadow-md reading-content min-h-[50vh] ${isLoading ? 'opacity-50' : ''}`}>
+        <div className={`reading-${themeConfig.background} sm:rounded-lg sm:shadow-md reading-content min-h-[50vh]`}>
           <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center pb-4 border-b border-current/20">
             {chapter.chapter.name}
           </h1>
@@ -314,26 +247,22 @@ export default function ChapterPage() {
 
         <div className="mt-6 flex justify-center gap-2">
           {chapter.prevChapter?.slug && (
-            <button
+            <NavButton
+              label="Previous Chapter"
+              icon={<ChevronLeftIcon />}
               onClick={() => loadChapter(chapter.prevChapter!.slug!)}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Previous chapter"
-            >
-              <ChevronLeftIcon />
-              Previous Chapter
-            </button>
+              ariaLabel="Previous chapter"
+            />
           )}
           {chapter.nextChapter?.slug && (
-            <button
+            <NavButton
+              label="Next Chapter"
+              icon={<ChevronRightIcon />}
               onClick={() => loadChapter(chapter.nextChapter!.slug!)}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Next chapter"
-            >
-              Next Chapter
-              <ChevronRightIcon />
-            </button>
+              ariaLabel="Next chapter"
+            />
           )}
       </div>
     </PageLayout>
