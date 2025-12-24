@@ -243,28 +243,15 @@ export default function ChapterPage() {
           <div className="flex gap-2 items-center">
             <NavButton
               icon={<ThemeIcon />}
-              label={showSettings ? 'Hide' : 'Theme'}
               onClick={() => setShowSettings(!showSettings)}
-              disabled={false}
               ariaLabel={showSettings ? 'Hide settings' : 'Show settings'}
               ariaExpanded={showSettings}
               ariaControls="settings-panel"
-              className="hidden sm:flex"
-            />
-            <NavButton
-              icon={<ThemeIcon />}
-              onClick={() => setShowSettings(!showSettings)}
-              disabled={false}
-              ariaLabel={showSettings ? 'Hide settings' : 'Show settings'}
-              ariaExpanded={showSettings}
-              ariaControls="settings-panel"
-              className="sm:hidden"
             />
             {chapter.prevChapter?.slug && (
               <NavButton
                 icon={<ChevronLeftIcon />}
                 onClick={() => navigateChapter('prev')}
-                disabled={isLoading}
                 ariaLabel="Previous chapter"
               />
             )}
@@ -272,7 +259,6 @@ export default function ChapterPage() {
               <NavButton
                 icon={<ChevronRightIcon />}
                 onClick={() => navigateChapter('next')}
-                disabled={isLoading}
                 ariaLabel="Next chapter"
                 className="mr-2"
               />
@@ -345,7 +331,6 @@ export default function ChapterPage() {
               label="Previous Chapter"
               icon={<ChevronLeftIcon />}
               onClick={() => navigateChapter('prev')}
-              disabled={isLoading}
               ariaLabel="Previous chapter"
             />
           )}
@@ -354,7 +339,6 @@ export default function ChapterPage() {
               label="Next Chapter"
               icon={<ChevronRightIcon />}
               onClick={() => navigateChapter('next')}
-              disabled={isLoading}
               ariaLabel="Next chapter"
             />
           )}

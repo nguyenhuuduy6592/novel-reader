@@ -1,8 +1,8 @@
 interface NavButtonProps {
   label?: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   onClick: () => void;
-  disabled: boolean;
+  disabled?: boolean;
   ariaLabel: string;
   className?: string;
   ariaExpanded?: boolean;
