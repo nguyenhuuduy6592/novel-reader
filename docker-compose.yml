@@ -12,21 +12,8 @@ services:
       - .:/app
       - /app/node_modules
       - /app/.next
+    # Run as root for development to handle volume mount permissions
+    user: root
     restart: unless-stopped
     profiles:
       - dev
-
-  novel-reader-prod:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
-    restart: unless-stopped
-    profiles:
-      - prod

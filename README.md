@@ -38,15 +38,6 @@ For development with hot reloading:
 docker-compose --profile dev up -d
 ```
 
-### Using Docker Directly
-
-For development:
-
-```bash
-docker build -f Dockerfile.dev -t novel-reader-dev .
-docker run -p 3000:3000 -v $(pwd):/app novel-reader-dev
-```
-
 ### Docker Configuration
 
 The project includes:
