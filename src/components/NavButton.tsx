@@ -10,11 +10,8 @@ interface NavButtonProps {
 }
 
 export function NavButton({ label, icon, onClick, disabled, ariaLabel, className: additionalClassName, ariaExpanded, ariaControls }: NavButtonProps) {
-  const baseClassName = label
-    ? 'flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed'
-    : 'px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed';
-
-  const className = additionalClassName ? `${baseClassName} ${additionalClassName}` : baseClassName;
+  const baseClassName = 'flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+  const className = additionalClassName ? `${baseClassName} ${additionalClassName}` : baseClassName
 
   return (
     <button
