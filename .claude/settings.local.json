@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(npm test)",
-      "Bash(npm run type)"
+      "Bash(npm run type)",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_navigate_back",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_run_code",
+      "mcp__playwright__browser_close",
+      "Bash(npm run dev)",
+      "Bash(npm test -- --testPathPattern=\"page.test.tsx\" --no-coverage)",
+      "Bash(npm test -- --testPathPatterns=\"page.test.tsx\" --no-coverage)"
     ]
   }
 }

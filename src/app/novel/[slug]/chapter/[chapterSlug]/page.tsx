@@ -73,6 +73,9 @@ export default function ChapterPage() {
       return;
     }
 
+    // Helper to build chapter URL
+    const buildChapterUrl = (chapterSlug: string): string => `/novel/${slug}/chapter/${chapterSlug}`;
+
     const targetSlug = direction === 'next'
       ? chapter.nextChapter?.slug
       : chapter.prevChapter?.slug;
@@ -86,6 +89,8 @@ export default function ChapterPage() {
 
     if (targetChapter) {
       loadChapter(targetSlug, targetChapter);
+      const newUrl = buildChapterUrl(targetSlug);
+      window.history.pushState({ chapterSlug: targetSlug }, '', newUrl);
       return;
     }
 
@@ -123,6 +128,8 @@ export default function ChapterPage() {
         loaded: { slug: fallbackSlug, name: fallbackChapter.chapter.name, number: targetNum },
       });
       loadChapter(fallbackSlug, fallbackChapter);
+      const fallbackUrl = buildChapterUrl(fallbackSlug);
+      window.history.pushState({ chapterSlug: fallbackSlug }, '', fallbackUrl);
     }
   }, [slug, chapter, loadChapter]);
 
@@ -171,6 +178,19 @@ export default function ChapterPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [chapter, navigateChapter]);
+
+  // Handle browser back/forward button
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Extract chapter slug from URL since useParams doesn't update with pushState
+      const pathParts = window.location.pathname.split('/');
+      const newChapterSlug = pathParts[pathParts.length - 1];
+      loadChapter(newChapterSlug);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [loadChapter]);
 
   if (chapter === null) {
     return (
