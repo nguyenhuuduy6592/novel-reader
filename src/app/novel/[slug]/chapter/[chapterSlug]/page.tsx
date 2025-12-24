@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getChapter, saveCurrentChapter, listChapters } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
-import { HomeIcon, ChevronLeftIcon, ChevronRightIcon } from '@/lib/icons';
+import { HomeIcon, ChevronLeftIcon, ChevronRightIcon, ThemeIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { ThemeSelect } from '@/components/ThemeSelect';
@@ -227,9 +227,9 @@ export default function ChapterPage() {
   }
 
   return (
-    <PageLayout padding="pb-4 sm:py-8 sm:px-4">
+    <PageLayout padding="py-4 sm:py-8 sm:px-4">
       <OfflineIndicator />
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-4 flex justify-between items-center">
           <div className="flex gap-2">
             <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
               <HomeIcon />
@@ -241,17 +241,28 @@ export default function ChapterPage() {
             </Link>
           </div>
           <div className="flex gap-2 items-center">
-            <button
+            <NavButton
+              icon={<ThemeIcon />}
+              label={showSettings ? 'Hide' : 'Theme'}
               onClick={() => setShowSettings(!showSettings)}
-              className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:bg-blue-700 focus:bg-blue-700 cursor-pointer text-sm"
-              aria-expanded={showSettings}
-              aria-controls="settings-panel"
-            >
-              {showSettings ? 'Hide' : 'Theme'}
-            </button>
+              disabled={false}
+              ariaLabel={showSettings ? 'Hide settings' : 'Show settings'}
+              ariaExpanded={showSettings}
+              ariaControls="settings-panel"
+              className="hidden sm:flex"
+            />
+            <NavButton
+              icon={<ThemeIcon />}
+              onClick={() => setShowSettings(!showSettings)}
+              disabled={false}
+              ariaLabel={showSettings ? 'Hide settings' : 'Show settings'}
+              ariaExpanded={showSettings}
+              ariaControls="settings-panel"
+              className="sm:hidden"
+            />
             {chapter.prevChapter?.slug && (
               <NavButton
-                icon="Previous"
+                icon={<ChevronLeftIcon />}
                 onClick={() => navigateChapter('prev')}
                 disabled={isLoading}
                 ariaLabel="Previous chapter"
@@ -259,10 +270,11 @@ export default function ChapterPage() {
             )}
             {chapter.nextChapter?.slug && (
               <NavButton
-                icon="Next"
+                icon={<ChevronRightIcon />}
                 onClick={() => navigateChapter('next')}
                 disabled={isLoading}
                 ariaLabel="Next chapter"
+                className="mr-2"
               />
             )}
           </div>

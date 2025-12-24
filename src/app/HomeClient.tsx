@@ -32,15 +32,15 @@ export default function HomeClient({ version }: { version: string }) {
   return (
     <PageLayout>
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">Novel Reader</h1>
+        <div className="flex items-center gap-1 md:gap-4">
+          <h1 className="text-3xl font-bold whitespace-nowrap">Novel Reader</h1>
           <span className="text-sm text-gray-500 font-medium">
             v{version}
           </span>
         </div>
         <Link
           href="/import"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 whitespace-nowrap"
         >
           <ImportIcon />
           Import Novel
