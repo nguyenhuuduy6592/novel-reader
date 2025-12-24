@@ -10,8 +10,6 @@ export async function importNovelFromJson(jsonString: string): Promise<{ success
       ? novel.book.coverUrl
       : `https://static.truyenchucv.org${novel.book.coverUrl}`;
 
-    novel.chapters = novel.chapters?.sort((a, b) => (a.chapter.slug || '').localeCompare(b.chapter.slug || '')) || [];
-
     console.log('Importing novel:', novel);
     await saveNovel(novel);
     return { success: true };

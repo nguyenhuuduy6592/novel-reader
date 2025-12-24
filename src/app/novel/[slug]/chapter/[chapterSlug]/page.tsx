@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getChapter, saveCurrentChapter } from '@/lib/indexedDB';
+import { getChapter, saveCurrentChapter, listChapters } from '@/lib/indexedDB';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
@@ -34,8 +34,7 @@ export default function ChapterPage() {
   const [showSettings, setShowSettings] = useState(false);
   const loadingRef = useRef<string | null>(null);
 
-  const loadChapter = useCallback(async (targetSlug: string) => {
-    // Cancel if this request is stale
+  const loadChapter = useCallback(async (targetSlug: string, preFetchedChapter?: ChapterInfo | null) => {
     const requestId = `${slug}-${targetSlug}`;
     loadingRef.current = requestId;
 
@@ -43,10 +42,12 @@ export default function ChapterPage() {
     setError(null);
 
     try {
-      const ch = await getChapter(slug, targetSlug);
+      // Use pre-fetched chapter if provided, otherwise fetch
+      const ch = preFetchedChapter !== undefined ? preFetchedChapter : await getChapter(slug, targetSlug);
 
-      // Check if this request is still valid
-      if (loadingRef.current !== requestId) return;
+      if (loadingRef.current !== requestId) {
+        return;
+      }
 
       if (ch) {
         setChapter(ch);
@@ -65,6 +66,65 @@ export default function ChapterPage() {
       }
     }
   }, [slug]);
+
+  // Navigate to next/prev chapter with index-based fallback
+  const navigateChapter = useCallback(async (direction: 'next' | 'prev') => {
+    if (!chapter) {
+      return;
+    }
+
+    const targetSlug = direction === 'next'
+      ? chapter.nextChapter?.slug
+      : chapter.prevChapter?.slug;
+
+    if (!targetSlug) {
+      return;
+    }
+
+    // Try loading by slug first
+    const targetChapter = await getChapter(slug, targetSlug);
+
+    if (targetChapter) {
+      loadChapter(targetSlug, targetChapter);
+      return;
+    }
+
+    // Fallback: use chapter number-based navigation
+    const allChapters = await listChapters(slug);
+
+    // Extract chapter number from current slug (e.g., "chuong-15-..." -> 15)
+    const currentSlug = chapter.chapter.slug ?? '';
+    const currentMatch = currentSlug.match(/chuong-(\d+)/);
+    if (!currentMatch) {
+      return;
+    }
+
+    const currentNum = parseInt(currentMatch[1], 10);
+    const targetNum = direction === 'next' ? currentNum + 1 : currentNum - 1;
+
+    // Find the chapter with the target number
+    const fallbackChapter = allChapters.find(c => {
+      const slug = c.chapter.slug ?? '';
+      const match = slug.match(/chuong-(\d+)/);
+      return match ? parseInt(match[1], 10) === targetNum : false;
+    });
+
+    if (fallbackChapter) {
+      const fallbackSlug = fallbackChapter.chapter.slug ?? '';
+      if (!fallbackSlug) {
+        return;
+      }
+      const storedChapterInfo = direction === 'next'
+        ? chapter.nextChapter
+        : chapter.prevChapter;
+      console.info('[Navigation] Fallback: stored slug not found, calculated by chapter number instead', {
+        direction,
+        stored: { slug: targetSlug, name: storedChapterInfo?.name },
+        loaded: { slug: fallbackSlug, name: fallbackChapter.chapter.name, number: targetNum },
+      });
+      loadChapter(fallbackSlug, fallbackChapter);
+    }
+  }, [slug, chapter, loadChapter]);
 
   useEffect(() => {
     loadChapter(chapterSlug);
@@ -102,15 +162,15 @@ export default function ChapterPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' && chapter?.prevChapter?.slug) {
-        loadChapter(chapter.prevChapter.slug);
+        navigateChapter('prev');
       } else if (e.key === 'ArrowRight' && chapter?.nextChapter?.slug) {
-        loadChapter(chapter.nextChapter.slug);
+        navigateChapter('next');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [chapter, loadChapter]);
+  }, [chapter, navigateChapter]);
 
   if (chapter === null) {
     return (
@@ -170,7 +230,7 @@ export default function ChapterPage() {
             {chapter.prevChapter?.slug && (
               <NavButton
                 icon="Previous"
-                onClick={() => loadChapter(chapter.prevChapter!.slug!)}
+                onClick={() => navigateChapter('prev')}
                 disabled={isLoading}
                 ariaLabel="Previous chapter"
               />
@@ -178,7 +238,7 @@ export default function ChapterPage() {
             {chapter.nextChapter?.slug && (
               <NavButton
                 icon="Next"
-                onClick={() => loadChapter(chapter.nextChapter!.slug!)}
+                onClick={() => navigateChapter('next')}
                 disabled={isLoading}
                 ariaLabel="Next chapter"
               />
@@ -250,7 +310,7 @@ export default function ChapterPage() {
             <NavButton
               label="Previous Chapter"
               icon={<ChevronLeftIcon />}
-              onClick={() => loadChapter(chapter.prevChapter!.slug!)}
+              onClick={() => navigateChapter('prev')}
               disabled={isLoading}
               ariaLabel="Previous chapter"
             />
@@ -259,7 +319,7 @@ export default function ChapterPage() {
             <NavButton
               label="Next Chapter"
               icon={<ChevronRightIcon />}
-              onClick={() => loadChapter(chapter.nextChapter!.slug!)}
+              onClick={() => navigateChapter('next')}
               disabled={isLoading}
               ariaLabel="Next chapter"
             />

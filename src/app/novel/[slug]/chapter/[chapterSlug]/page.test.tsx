@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ChapterPage from '@/app/novel/[slug]/chapter/[chapterSlug]/page'
-import { getNovel, getChapter, saveCurrentChapter } from '@/lib/indexedDB'
+import { getNovel, getChapter, saveCurrentChapter, listChapters } from '@/lib/indexedDB'
 import { Novel, ChapterInfo } from '@/types'
 import * as nextNavigation from 'next/navigation'
 
@@ -20,18 +20,18 @@ jest.mock('next/navigation', () => ({
 
 const mockChapters: ChapterInfo[] = [
   {
-    chapter: { name: 'Chapter 1', slug: 'chap-1', content: 'Content 1' },
+    chapter: { name: 'Chapter 1', slug: 'chuong-1', content: 'Content 1' },
     prevChapter: undefined,
-    nextChapter: { name: 'Chapter 2', slug: 'chap-2', content: '' },
+    nextChapter: { name: 'Chapter 2', slug: 'chuong-2', content: '' },
   },
   {
-    chapter: { name: 'Chapter 2', slug: 'chap-2', content: 'Content 2' },
-    prevChapter: { name: 'Chapter 1', slug: 'chap-1', content: '' },
-    nextChapter: { name: 'Chapter 3', slug: 'chap-3', content: '' },
+    chapter: { name: 'Chapter 2', slug: 'chuong-2', content: 'Content 2' },
+    prevChapter: { name: 'Chapter 1', slug: 'chuong-1', content: '' },
+    nextChapter: { name: 'Chapter 3', slug: 'chuong-3', content: '' },
   },
   {
-    chapter: { name: 'Chapter 3', slug: 'chap-3', content: 'Content 3' },
-    prevChapter: { name: 'Chapter 2', slug: 'chap-2', content: '' },
+    chapter: { name: 'Chapter 3', slug: 'chuong-3', content: 'Content 3' },
+    prevChapter: { name: 'Chapter 2', slug: 'chuong-2', content: '' },
     nextChapter: undefined,
   },
 ]
@@ -54,12 +54,13 @@ describe('ChapterPage', () => {
     ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[1]) // Default to chapter 2
     ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
     ;(saveCurrentChapter as jest.Mock).mockResolvedValue(undefined)
+    ;(listChapters as jest.Mock).mockResolvedValue(mockChapters)
     mockPush.mockClear()
     mockReplace.mockClear()
     mockScrollTo.mockClear()
     ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
       slug: 'test-novel',
-      chapterSlug: 'chap-2',
+      chapterSlug: 'chuong-2',
     })
     ;(nextNavigation.useRouter as jest.Mock).mockReturnValue({
       push: mockPush,
@@ -75,6 +76,17 @@ describe('ChapterPage', () => {
     })
 
     expect(screen.getByText('Content 2')).toBeInTheDocument()
+  })
+
+  it('does not fetch all chapters on mount', async () => {
+    render(<ChapterPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Chapter 2')).toBeInTheDocument()
+    })
+
+    // listChapters should NOT be called on mount
+    expect(listChapters).not.toHaveBeenCalled()
   })
 
   it('shows next chapter button when next chapter exists', async () => {
@@ -101,7 +113,7 @@ describe('ChapterPage', () => {
     const user = userEvent.setup()
     ;(getChapter as jest.Mock)
       .mockResolvedValueOnce(mockChapters[1]) // Initial load
-      .mockResolvedValueOnce(mockChapters[2]) // Next chapter
+      .mockResolvedValueOnce(mockChapters[2]) // navigateChapter fetches and passes to loadChapter
 
     render(<ChapterPage />)
 
@@ -123,7 +135,7 @@ describe('ChapterPage', () => {
     const user = userEvent.setup()
     ;(getChapter as jest.Mock)
       .mockResolvedValueOnce(mockChapters[1]) // Initial load
-      .mockResolvedValueOnce(mockChapters[0]) // Previous chapter
+      .mockResolvedValueOnce(mockChapters[0]) // navigateChapter fetches and passes to loadChapter
 
     render(<ChapterPage />)
 
@@ -145,7 +157,7 @@ describe('ChapterPage', () => {
     const user = userEvent.setup()
     ;(getChapter as jest.Mock)
       .mockResolvedValueOnce(mockChapters[1]) // Initial load
-      .mockResolvedValueOnce(mockChapters[2]) // Next chapter
+      .mockResolvedValueOnce(mockChapters[2]) // navigateChapter fetch
 
     render(<ChapterPage />)
 
@@ -156,7 +168,106 @@ describe('ChapterPage', () => {
     await user.keyboard('{ArrowRight}')
 
     await waitFor(() => {
-      expect(getChapter).toHaveBeenCalledWith('test-novel', 'chap-3')
+      expect(getChapter).toHaveBeenCalledWith('test-novel', 'chuong-3')
+    })
+  })
+
+  describe('fallback navigation', () => {
+    it('uses chapter number-based navigation when stored next slug is invalid', async () => {
+      const user = userEvent.setup()
+
+      // Create a chapter with invalid next slug
+      const chapterWithInvalidNext: ChapterInfo = {
+        chapter: { name: 'Chapter 2', slug: 'chuong-2', content: 'Content 2' },
+        prevChapter: { name: 'Chapter 1', slug: 'chuong-1', content: '' },
+        nextChapter: { name: 'Invalid', slug: 'invalid-slug', content: '' },
+      }
+
+      ;(getChapter as jest.Mock)
+        .mockResolvedValueOnce(chapterWithInvalidNext) // Initial load
+        .mockResolvedValueOnce(null) // Invalid slug lookup fails
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Chapter 2')).toBeInTheDocument()
+      })
+
+      const nextButton = screen.getAllByRole('button', { name: /next/i })[1]
+      await user.click(nextButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Chapter 3')).toBeInTheDocument()
+      })
+
+      // Should have tried slug first, then fell back to listChapters
+      expect(getChapter).toHaveBeenCalledWith('test-novel', 'invalid-slug')
+      expect(listChapters).toHaveBeenCalledWith('test-novel')
+    })
+
+    it('uses chapter number-based navigation when stored prev slug is invalid', async () => {
+      const user = userEvent.setup()
+
+      // Create a chapter with invalid prev slug
+      const chapterWithInvalidPrev: ChapterInfo = {
+        chapter: { name: 'Chapter 2', slug: 'chuong-2', content: 'Content 2' },
+        prevChapter: { name: 'Invalid', slug: 'invalid-slug', content: '' },
+        nextChapter: { name: 'Chapter 3', slug: 'chuong-3', content: '' },
+      }
+
+      ;(getChapter as jest.Mock)
+        .mockResolvedValueOnce(chapterWithInvalidPrev) // Initial load
+        .mockResolvedValueOnce(null) // Invalid slug lookup fails
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Chapter 2')).toBeInTheDocument()
+      })
+
+      const prevButton = screen.getAllByRole('button', { name: /previous/i })[1]
+      await user.click(prevButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Chapter 1')).toBeInTheDocument()
+      })
+
+      expect(getChapter).toHaveBeenCalledWith('test-novel', 'invalid-slug')
+      expect(listChapters).toHaveBeenCalledWith('test-novel')
+    })
+
+    it('does not show prev button when at first chapter', async () => {
+      const user = userEvent.setup()
+      ;(getChapter as jest.Mock).mockClear().mockResolvedValue(mockChapters[0])
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Chapter 1')).toBeInTheDocument()
+      })
+
+      const prevButton = screen.queryByRole('button', { name: /previous chapter/i })
+      expect(prevButton).not.toBeInTheDocument()
+    })
+
+    it('does not show next button when at last chapter', async () => {
+      const user = userEvent.setup()
+
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+
+      ;(getChapter as jest.Mock).mockClear().mockResolvedValue(mockChapters[2])
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Chapter 3')).toBeInTheDocument()
+      })
+
+      const nextButton = screen.queryByRole('button', { name: /next chapter/i })
+      expect(nextButton).not.toBeInTheDocument()
     })
   })
 })
