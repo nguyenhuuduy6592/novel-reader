@@ -184,7 +184,7 @@ describe('AiSummary', () => {
       expect(screen.getAllByText('AI Summary')).toHaveLength(1);
     });
 
-    it('shows generate button when no summary exists (error is ignored)', () => {
+    it('shows error and generate button when no summary exists', () => {
       render(
         <AiSummary
           aiSettings={mockAiSettings}
@@ -195,8 +195,12 @@ describe('AiSummary', () => {
         />
       );
 
-      // When there's no summary, error is not shown - just the generate button
-      expect(screen.queryByText('API request failed')).not.toBeInTheDocument();
+      // Error should be visible above the generate button
+      expect(screen.getByText('API request failed')).toBeInTheDocument();
+      expect(screen.getByText('AI Summary Error')).toBeInTheDocument();
+      expect(screen.getByText('Retry')).toBeInTheDocument();
+
+      // Generate button should still be shown
       expect(screen.getByText('No AI summary available.')).toBeInTheDocument();
       expect(screen.getByText('Generate Summary')).toBeInTheDocument();
     });

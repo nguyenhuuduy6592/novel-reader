@@ -40,6 +40,7 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
     }
   };
 
+  // Loading state
   if (isGenerating) {
     return (
       <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg animate-pulse">
@@ -51,22 +52,9 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
     );
   }
 
-  if (!summary) {
-    return (
-      <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <p className="text-gray-600 mb-2">No AI summary available.</p>
-        <button
-          onClick={onGenerate}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm cursor-pointer"
-        >
-          Generate Summary
-        </button>
-      </div>
-    );
-  }
-
   return (
     <>
+      {/* Error display (shown above content when error exists) */}
       {error && (
         <details
           className="mb-4 group"
@@ -88,28 +76,42 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
           </div>
         </details>
       )}
-      <details
-        ref={detailsRef}
-        className="mb-4 group"
-        onToggle={handleToggle}
-        open={true}
-      >
-        <summary className="cursor-pointer p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-between transition-colors">
-          <span className="font-semibold text-amber-800">AI Summary</span>
-          <span className="text-amber-600 group-open:rotate-180 transition-transform">▼</span>
-        </summary>
-        <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-b-lg">
-          <div className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-3">
-            {summary}
-          </div>
+
+      {/* Content: either generate button or summary display */}
+      {!summary ? (
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <p className="text-gray-600 mb-2">No AI summary available.</p>
           <button
             onClick={onGenerate}
-            className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm cursor-pointer"
           >
-            Regenerate Summary
+            Generate Summary
           </button>
         </div>
-      </details>
+      ) : (
+        <details
+          ref={detailsRef}
+          className="mb-4 group"
+          onToggle={handleToggle}
+          open={true}
+        >
+          <summary className="cursor-pointer p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-between transition-colors">
+            <span className="font-semibold text-amber-800">AI Summary</span>
+            <span className="text-amber-600 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-b-lg">
+            <div className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-3">
+              {summary}
+            </div>
+            <button
+              onClick={onGenerate}
+              className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
+            >
+              Regenerate Summary
+            </button>
+          </div>
+        </details>
+      )}
     </>
   );
 }
