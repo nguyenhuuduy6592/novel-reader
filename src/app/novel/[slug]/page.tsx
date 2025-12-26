@@ -2,15 +2,18 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import { getNovel, getCurrentChapter, listChapters } from '@/lib/indexedDB';
+import { useParams, useRouter } from 'next/navigation';
+import { getNovel, getCurrentChapter, listChapters, removeNovel } from '@/lib/indexedDB';
 import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
-import { HomeIcon } from '@/lib/icons';
+import { HomeIcon, TrashIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
+import { NavButton } from '@/components/NavButton';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export default function NovelPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
   const [novel, setNovel] = useState<Novel | null>(null);
   const [chapters, setChapters] = useState<ChapterInfo[]>([]);
@@ -18,6 +21,8 @@ export default function NovelPage() {
   const [currentChapterName, setCurrentChapterName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -49,6 +54,19 @@ export default function NovelPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleDeleteNovel = async () => {
+    if (!novel) return;
+    setIsDeleting(true);
+    try {
+      await removeNovel(slug);
+      router.push('/');
+    } catch (error) {
+      console.error('Failed to remove novel:', error);
+      alert('Failed to remove novel. Please try again.');
+      setIsDeleting(false);
+    }
+  };
+
   if (!novel) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -72,14 +90,41 @@ export default function NovelPage() {
     <PageLayout>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Novel Details</h1>
-        <Link
-          href="/"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-        >
-          <HomeIcon />
-          Home
-        </Link>
+        <div className="flex gap-2">
+          <NavButton
+            label="Remove Novel"
+            icon={<TrashIcon />}
+            onClick={() => setShowDeleteDialog(true)}
+            ariaLabel="Remove novel"
+            className="bg-red-500 hover:bg-red-600 active:bg-red-700 focus:bg-red-700"
+          />
+          <Link
+            href="/"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            <HomeIcon />
+            Home
+          </Link>
+        </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Remove Novel"
+        message={
+          <>
+            Are you sure you want to remove <strong>{novel.book.name}</strong>? This action cannot be undone.
+          </>
+        }
+        confirmText="Remove Novel"
+        cancelText="Cancel"
+        isProcessing={isDeleting}
+        processingText="Removing..."
+        onConfirm={handleDeleteNovel}
+        onCancel={() => setShowDeleteDialog(false)}
+        variant="danger"
+      />
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex flex-col lg:flex-row gap-8 mb-8">
