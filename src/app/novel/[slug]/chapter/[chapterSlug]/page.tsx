@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { getChapter, saveCurrentChapter, listChapters, saveChapterSummary } from '@/lib/indexedDB';
 import { generateSummary as generateSummaryFromApi } from '@/lib/aiSummary';
 import { ChapterInfo, ReadingThemeConfig, AiSettings, AiProviderConfig } from '@/types';
@@ -538,7 +539,7 @@ export default function ChapterPage() {
             }}
           >
             {chapter.chapter.content.split('\n').filter(Boolean).map((paragraph, index) => (
-              <p key={index} dangerouslySetInnerHTML={{ __html: paragraph }} />
+              <p key={index} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(paragraph) }} />
             ))}
           </div>
         </div>
