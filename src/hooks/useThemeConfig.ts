@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ReadingThemeConfig } from '@/types';
 import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
 
@@ -10,32 +10,29 @@ const DEFAULT_THEME: ReadingThemeConfig = {
   padding: 'compact'
 };
 
-export function useThemeConfig() {
-  const isInitialMount = useRef(true);
-  const [themeConfig, setThemeConfig] = useState<ReadingThemeConfig>(DEFAULT_THEME);
+// Initialize theme from localStorage (called once during initial render)
+function getInitialTheme(): ReadingThemeConfig {
+  if (typeof window === 'undefined') {
+    return DEFAULT_THEME;
+  }
 
-  // Load theme config on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.READING_THEME);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setThemeConfig(parsed);
-      } catch {
-        // Invalid JSON, use defaults
-      }
+  const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.READING_THEME);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed;
+    } catch {
+      return DEFAULT_THEME;
     }
+  }
+  return DEFAULT_THEME;
+}
 
-    // Mark initial mount complete after loading
-    isInitialMount.current = false;
-  }, []);
+export function useThemeConfig() {
+  const [themeConfig, setThemeConfig] = useState<ReadingThemeConfig>(getInitialTheme);
 
   // Apply theme config to DOM and save to localStorage
   useEffect(() => {
-    if (isInitialMount.current) {
-      return; // Skip saving on initial load
-    }
-
     localStorage.setItem(LOCAL_STORAGE_KEYS.READING_THEME, JSON.stringify(themeConfig));
     document.documentElement.style.setProperty('--reading-font-size', `${themeConfig.fontSize}px`);
     document.documentElement.style.setProperty('--reading-line-height', `${themeConfig.lineHeight}`);
