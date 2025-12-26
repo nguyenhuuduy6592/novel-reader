@@ -78,7 +78,8 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
       )}
 
       {/* Content: either generate button or summary display */}
-      {!summary ? (
+      {/* Hide generate button when there's an error (retry button is in error block) */}
+      {!summary && !error ? (
         <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <p className="text-gray-600 mb-2">No AI summary available.</p>
           <button
@@ -88,7 +89,7 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
             Generate Summary
           </button>
         </div>
-      ) : (
+      ) : summary && (
         <details
           ref={detailsRef}
           className="mb-4 group"
