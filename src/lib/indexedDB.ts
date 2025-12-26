@@ -43,10 +43,11 @@ export async function saveNovel(novel: Novel): Promise<void> {
   const db = await openDB();
   const tx = db.transaction(['novels', 'chapters'], 'readwrite');
 
-  // Save novel
+  // Save novel (without chapters to save space)
   const novelsStore = tx.objectStore('novels');
+  const novelToSave = { ...novel, chapters: undefined };
   await new Promise<void>((resolve, reject) => {
-    const request = novelsStore.put(novel);
+    const request = novelsStore.put(novelToSave);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
@@ -260,7 +261,7 @@ export async function saveChapterSummary(novelSlug: string, chapterSlug: string,
   // Update the chapter with the summary
   existingChapter.chapter.chapter.aiSummary = summary;
 
-  // Save back to DB
+  // Save back to chapters store
   await new Promise<void>((resolve, reject) => {
     const request = chaptersStore.put(existingChapter);
     request.onsuccess = () => resolve();

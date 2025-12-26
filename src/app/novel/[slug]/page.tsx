@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { getNovel, getCurrentChapter } from '@/lib/indexedDB';
-import { Novel } from '@/types';
+import { getNovel, getCurrentChapter, listChapters } from '@/lib/indexedDB';
+import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
 import { HomeIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
@@ -13,6 +13,7 @@ export default function NovelPage() {
   const params = useParams();
   const slug = params.slug as string;
   const [novel, setNovel] = useState<Novel | null>(null);
+  const [chapters, setChapters] = useState<ChapterInfo[]>([]);
   const [currentChapterSlug, setCurrentChapterSlug] = useState<string | null>(null);
   const [currentChapterName, setCurrentChapterName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,9 +24,11 @@ export default function NovelPage() {
     const loadNovel = async () => {
       const n = await getNovel(slug);
       setNovel(n);
+      const chaptersList = await listChapters(slug);
+      setChapters(chaptersList);
       const currentSlug = await getCurrentChapter(slug);
       const currentChapterName = currentSlug ?
-        n?.chapters?.find(c => c.chapter.slug === currentSlug)?.chapter.name || null
+        chaptersList?.find(c => c.chapter.slug === currentSlug)?.chapter.name || null
         : null;
       setCurrentChapterSlug(currentSlug);
       setCurrentChapterName(currentChapterName);
@@ -103,7 +106,7 @@ export default function NovelPage() {
               </span>
             </div>
             <Link
-              href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${novel.chapters?.[0]?.chapter.slug || ''}`}
+              href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
               className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-lg transition-colors w-fit ${
                 currentChapterSlug
                   ? 'bg-blue-500 hover:bg-blue-600'
@@ -115,7 +118,7 @@ export default function NovelPage() {
           </div>
         </div>
 
-        {novel.chapters && novel.chapters.length > 0 && (
+        {chapters && chapters.length > 0 && (
           <div className="mt-4">
             <div className="mb-3">
               <input
@@ -129,13 +132,13 @@ export default function NovelPage() {
             </div>
             <h2 className="text-lg font-bold mb-2">Chapters</h2>
             <div className="space-y-0.5">
-              {novel.chapters
+              {chapters
                 .filter((chapterInfo) =>
                   chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
                 )
                 .slice(0, searchTerm ? undefined : 10)
                 .map((chapterInfo) => {
-                  const actualIndex = novel.chapters?.findIndex(c => c.chapter.slug === chapterInfo.chapter.slug) ?? 0;
+                  const actualIndex = chapters.findIndex(c => c.chapter.slug === chapterInfo.chapter.slug) ?? 0;
                   return (
                 <Link
                   key={chapterInfo.chapter.slug}

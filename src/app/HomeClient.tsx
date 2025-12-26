@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ImportIcon, BookOpenIcon } from '@/lib/icons';
-import { Novel } from '@/types';
-import { getAllNovels, getCurrentChapter } from '@/lib/indexedDB';
+import { Novel, ChapterInfo } from '@/types';
+import { getAllNovels, getCurrentChapter, listChapters } from '@/lib/indexedDB';
 import Image from 'next/image';
 import PageLayout from '@/components/PageLayout';
 
 export default function HomeClient({ version }: { version: string }) {
-  const [novels, setNovels] = useState<{ novel: Novel; currentChapterSlug: string | null; currentChapterName: string | null }[]>([]);
+  const [novels, setNovels] = useState<{ novel: Novel; currentChapterSlug: string | null; currentChapterName: string | null; chapters: ChapterInfo[] }[]>([]);
 
   useEffect(() => {
     const loadNovels = async () => {
@@ -18,10 +18,11 @@ export default function HomeClient({ version }: { version: string }) {
       const novelsWithProgress = await Promise.all(
         rawNovels.map(async (novel) => {
           const currentChapterSlug = await getCurrentChapter(novel.book.slug);
+          const chapters = await listChapters(novel.book.slug);
           const currentChapterName = currentChapterSlug ?
-            novel.chapters?.find(c => c.chapter.slug === currentChapterSlug)?.chapter.name || null
+            chapters?.find(c => c.chapter.slug === currentChapterSlug)?.chapter.name || null
             : null;
-          return { novel, currentChapterSlug, currentChapterName };
+          return { novel, currentChapterSlug, currentChapterName, chapters };
         })
       );
       setNovels(novelsWithProgress);
@@ -53,8 +54,8 @@ export default function HomeClient({ version }: { version: string }) {
             <p className="text-gray-500">No novels imported yet.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {novels.map(({ novel, currentChapterSlug, currentChapterName }) => {
-                const firstChapterSlug = novel.chapters?.[0]?.chapter.slug || '';
+              {novels.map(({ novel, currentChapterSlug, currentChapterName, chapters }) => {
+                const firstChapterSlug = chapters[0]?.chapter.slug || '';
                 const chapterHref = currentChapterSlug ? `/novel/${novel.book.slug}/chapter/${currentChapterSlug}` : `/novel/${novel.book.slug}/chapter/${firstChapterSlug}`;
                 return (
                   <div key={novel.book.name} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200 h-fit">
