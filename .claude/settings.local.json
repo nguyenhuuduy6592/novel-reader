@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm test*)",
-      "Bash(npm test *)",
+      "Bash(npm test)",
       "Bash(npm run type)",
       "Bash(npm run dev)",
       "mcp__playwright*",
