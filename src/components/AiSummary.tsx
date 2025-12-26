@@ -17,6 +17,7 @@ export function AiSummary({ apiKey, summary, isGenerating, error, onGenerate }: 
   if (!apiKey) {
     return null;
   }
+
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
   // Restore collapsed state on mount

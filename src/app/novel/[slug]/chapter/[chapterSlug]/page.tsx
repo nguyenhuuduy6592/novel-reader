@@ -39,12 +39,37 @@ export default function ChapterPage() {
   const loadingRef = useRef<string | null>(null);
   const autoGenerateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialMount = useRef(true);
+  const isAiSettingsInitiallyLoaded = useRef(false);
+
+  // Initialize AI settings from localStorage immediately (synchronously on first render)
+  const getInitialAiSettings = () => {
+    if (typeof window === 'undefined') {
+      return { apiKey: '', model: DEFAULT_AI_MODEL, autoGenerate: false, summaryLength: DEFAULT_AI_SUMMARY_LENGTH };
+    }
+    const aiSettings = localStorage.getItem('aiSettings');
+    if (aiSettings) {
+      try {
+        const parsed = JSON.parse(aiSettings);
+        return {
+          apiKey: parsed.apiKey || '',
+          model: parsed.model || DEFAULT_AI_MODEL,
+          autoGenerate: parsed.autoGenerate ?? false,
+          summaryLength: parsed.summaryLength || DEFAULT_AI_SUMMARY_LENGTH,
+        };
+      } catch {
+        // Invalid JSON, use defaults
+      }
+    }
+    return { apiKey: '', model: DEFAULT_AI_MODEL, autoGenerate: false, summaryLength: DEFAULT_AI_SUMMARY_LENGTH };
+  };
+
+  const initialAiSettings = getInitialAiSettings();
 
   // AI settings
-  const [aiApiKey, setAiApiKey] = useState('');
-  const [aiModel, setAiModel] = useState<string>(DEFAULT_AI_MODEL);
-  const [aiAutoGenerate, setAiAutoGenerate] = useState(false);
-  const [aiSummaryLength, setAiSummaryLength] = useState<SummaryLength>(DEFAULT_AI_SUMMARY_LENGTH);
+  const [aiApiKey, setAiApiKey] = useState(initialAiSettings.apiKey);
+  const [aiModel, setAiModel] = useState<string>(initialAiSettings.model);
+  const [aiAutoGenerate, setAiAutoGenerate] = useState(initialAiSettings.autoGenerate);
+  const [aiSummaryLength, setAiSummaryLength] = useState<SummaryLength>(initialAiSettings.summaryLength);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -208,7 +233,7 @@ export default function ChapterPage() {
     loadChapter(chapterSlug);
   }, [slug, chapterSlug, loadChapter]);
 
-  // Load theme config and AI settings on mount
+  // Load theme config on mount (AI settings are loaded synchronously during initialization)
   useEffect(() => {
     const saved = localStorage.getItem('readingTheme');
     if (saved) {
@@ -220,22 +245,10 @@ export default function ChapterPage() {
       }
     }
 
-    // Load AI settings
-    const aiSettings = localStorage.getItem('aiSettings');
-    if (aiSettings) {
-      try {
-        const parsed = JSON.parse(aiSettings);
-        setAiApiKey(parsed.apiKey || '');
-        setAiModel(parsed.model || DEFAULT_AI_MODEL);
-        setAiAutoGenerate(parsed.autoGenerate ?? false);
-        setAiSummaryLength(parsed.summaryLength || DEFAULT_AI_SUMMARY_LENGTH);
-      } catch {
-        // Invalid JSON, use defaults
-      }
-    }
-
     // Mark initial mount complete after loading
     isInitialMount.current = false;
+    // Mark AI settings as initially loaded to enable saving
+    isAiSettingsInitiallyLoaded.current = true;
   }, []);
 
   useEffect(() => {
@@ -253,11 +266,15 @@ export default function ChapterPage() {
     document.documentElement.style.setProperty('--reading-font-family', fontMap[themeConfig.fontFamily]);
   }, [themeConfig]);
 
-  // Save AI settings to localStorage (skip initial mount to avoid overwriting)
+  // Save AI settings to localStorage (skip initial load to avoid overwriting)
   useEffect(() => {
-    if (isInitialMount.current) {
+    // Check if this is the first time saving after initial load
+    // We check and set in the same statement to ensure thread safety
+    if (!isAiSettingsInitiallyLoaded.current) {
+      isAiSettingsInitiallyLoaded.current = true;
       return;
     }
+
     localStorage.setItem('aiSettings', JSON.stringify({
       apiKey: aiApiKey,
       model: aiModel,
