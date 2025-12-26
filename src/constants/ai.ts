@@ -23,11 +23,14 @@ export const AI_SUMMARY_LENGTH_OPTIONS = [
 export const DEFAULT_AI_SUMMARY_LENGTH: SummaryLength = 'short';
 
 const SHORT_PROMPT = (content: string) =>
-  `Tóm tắt nội dung chương truyện sau trong 2-3 câu, viết thành một đoạn văn liền mạch tự nhiên như đang kể lại cho người khác nghe:
+  `Tóm tắt nội dung chương truyện sau trong 2-3 câu, viết thành một đoạn văn liền mạch tự nhiên như đang kể lại cho người khác nghe.
 
 ${content}
 
-Lưu ý: Viết ngay câu tóm tắt, không viết lời mở đầu như "Dưới đây là tóm tắt" hay "Tóm lại".`;
+QUAN TRỌNG:
+• Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
+• Viết ngay câu tóm tắt, không viết lời mở đầu như "Dưới đây là tóm tắt" hay "Tóm lại"
+• Giọng văn phải tự nhiên như người Việt đang kể chuyện`;
 
 const MEDIUM_PROMPT = (content: string) =>
   `Tóm tắt nội dung chương truyện sau trong 4-5 câu:
@@ -39,8 +42,11 @@ Tóm tắt nên bao gồm:
 • Sự phát triển của cốt truyện và mối quan hệ giữa các nhân vật
 • Những chi tiết đáng chú ý, bất ngờ hoặc bước ngoặt
 
-Viết thành đoạn văn hoặc gạch đầu dòng, giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc. Không viết lời mở đầu hay giải thích.
-
+QUAN TRỌNG:
+• Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
+• Viết thành đoạn văn hoặc gạch đầu dòng, giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc
+• Giọng văn phải tự nhiên như người Việt đang kể chuyện
+• Không viết lời mở đầu hay giải thích
 
 Tránh:
 • Không đưa ra ý kiến cá nhân hoặc phân tích sâu
@@ -61,7 +67,12 @@ Tóm tắt nên bao gồm:
 • Chi tiết đáng chú ý: Những sự kiện bất ngờ, bước ngoặt, hoặc thông tin quan tiết
 • Kết thúc: Tình huống kết thúc của chương và gợi ý cho chương sau
 
-Viết chi tiết khoảng 8-12 câu hoặc dạng gạch đầu dòng đầy đủ. Giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc. Không viết lời mở đầu hay giải thích.
+QUAN TRỌNG:
+• Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
+• Viết chi tiết khoảng 8-12 câu hoặc dạng gạch đầu dòng đầy đủ
+• Giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc
+• Giọng văn phải tự nhiên như người Việt đang kể chuyện
+• Không viết lời mở đầu hay giải thích
 
 Tránh:
 • Không đưa ra ý kiến cá nhân hoặc phân tích sâu
