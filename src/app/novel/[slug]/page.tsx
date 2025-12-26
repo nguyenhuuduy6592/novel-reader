@@ -133,7 +133,10 @@ export default function NovelPage() {
                 .filter((chapterInfo) =>
                   chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
                 )
-                .map((chapterInfo, index) => (
+                .slice(0, searchTerm ? undefined : 10)
+                .map((chapterInfo) => {
+                  const actualIndex = novel.chapters?.findIndex(c => c.chapter.slug === chapterInfo.chapter.slug) ?? 0;
+                  return (
                 <Link
                   key={chapterInfo.chapter.slug}
                   href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
@@ -148,12 +151,13 @@ export default function NovelPage() {
                       ) : (
                         <span className="flex-shrink-0 inline-block w-5 h-5"></span>
                       )}
-                      <span className="font-medium truncate">Ch {index + 1}: {chapterInfo.chapter.name}</span>
+                      <span className="font-medium truncate">Ch {actualIndex + 1}: {chapterInfo.chapter.name}</span>
                     </div>
                     <span className="text-gray-500 text-xs flex-shrink-0">→</span>
                   </div>
                 </Link>
-              ))}
+              );
+                })}
             </div>
           </div>
         )}
