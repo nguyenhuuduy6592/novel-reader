@@ -169,7 +169,8 @@ ${content}
 QUAN TRỌNG:
 • Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
 • Viết ngay câu tóm tắt, không viết lời mở đầu như "Dưới đây là tóm tắt" hay "Tóm lại"
-• Giọng văn phải tự nhiên như người Việt đang kể chuyện`;
+• Giọng văn phải tự nhiên như người Việt đang kể chuyện
+• Chia thành đoạn văn riêng biệt khi có sự thay đổi về chủ đề hoặc bối cảnh, giúp dễ đọc hơn`;
 
 const MEDIUM_PROMPT = (content: string) =>
   `Tóm tắt nội dung chương truyện sau trong 4-5 câu:
@@ -183,14 +184,17 @@ Tóm tắt nên bao gồm:
 
 QUAN TRỌNG:
 • Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
-• Viết thành đoạn văn hoặc gạch đầu dòng, giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc
+• Chia tóm tắt thành nhiều đoạn văn, mỗi đoạn tập trung vào một khía cạnh hoặc sự kiện chính
+• Giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc
 • Giọng văn phải tự nhiên như người Việt đang kể chuyện
 • Không viết lời mở đầu hay giải thích
+• Sử dụng xuống dòng để tạo đoạn văn mới khi chuyển sang ý hoặc sự kiện khác, giúp dễ đọc hơn
 
 Tránh:
 • Không đưa ra ý kiến cá nhân hoặc phân tích sâu
 • Không sao chép nguyên văn từ nội dung gốc
 • Không sử dụng ngôn ngữ quá phức tạp hoặc học thuật
+• Không viết tất cả thành một đoạn văn duy nhất
 `;
 
 
@@ -209,14 +213,18 @@ Tóm tắt nên bao gồm:
 QUAN TRỌNG:
 • Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
 • Viết chi tiết khoảng 8-12 câu hoặc dạng gạch đầu dòng đầy đủ
+• Chia tóm tắt thành nhiều đoạn văn rõ ràng, mỗi đoạn tập trung vào một phần của câu chuyện
+• Mỗi phần (mở đầu, diễn biến, phát triển, chi tiết, kết thúc) nên là một đoạn riêng biệt
 • Giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc
 • Giọng văn phải tự nhiên như người Việt đang kể chuyện
 • Không viết lời mở đầu hay giải thích
+• Sử dụng xuống dòng để tách biệt các phần, giúp người đọc dễ theo dõi
 
 Tránh:
 • Không đưa ra ý kiến cá nhân hoặc phân tích sâu
 • Không sao chép nguyên văn từ nội dung gốc
 • Không sử dụng ngôn ngữ quá phức tạp hoặc học thuật
+• Không viết tất cả thành một đoạn văn duy nhất
 `;
 
 export const AI_SUMMARY_PROMPT = (content: string, length: SummaryLength = 'medium'): string => {
