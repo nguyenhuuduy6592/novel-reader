@@ -23,33 +23,36 @@ export const AI_SUMMARY_LENGTH_OPTIONS = [
 export const DEFAULT_AI_SUMMARY_LENGTH: SummaryLength = 'short';
 
 const SHORT_PROMPT = (content: string) =>
-  `Bạn là một trợ lý hữu ích. Hãy tóm tắt ngắn gọn nội dung chương truyện này trong 2-3 câu.
+  `Tóm tắt nội dung chương truyện sau trong 2-3 câu, viết thành một đoạn văn liền mạch tự nhiên như đang kể lại cho người khác nghe:
 
-Tóm tắt nên tập trung vào diễn biến quan trọng nhất.
+${content}
 
-Nội dung chương:
-${content}`;
+Lưu ý: Viết ngay câu tóm tắt, không viết lời mở đầu như "Dưới đây là tóm tắt" hay "Tóm lại".`;
 
 const MEDIUM_PROMPT = (content: string) =>
-  `Bạn là một trợ lý hữu ích. Hãy tóm tắt nội dung chương truyện này.
+  `Tóm tắt nội dung chương truyện sau trong 4-5 câu:
+
+${content}
 
 Tóm tắt nên bao gồm:
 • Các tình huống chính và diễn biến quan trọng trong chương
 • Sự phát triển của cốt truyện và mối quan hệ giữa các nhân vật
 • Những chi tiết đáng chú ý, bất ngờ hoặc bước ngoặt
 
-Độ dài: 4-5 câu. Giọng văn: tự nhiên, dễ hiểu, dạng gạch đầu dòng nếu phù hợp. Duy trì giọng văn trong nội dung gốc.
+Viết thành đoạn văn hoặc gạch đầu dòng, giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc. Không viết lời mở đầu hay giải thích.
+
 
 Tránh:
 • Không đưa ra ý kiến cá nhân hoặc phân tích sâu
 • Không sao chép nguyên văn từ nội dung gốc
 • Không sử dụng ngôn ngữ quá phức tạp hoặc học thuật
+`;
 
-Nội dung chương:
-${content}`;
 
 const LONG_PROMPT = (content: string) =>
-  `Bạn là một trợ lý hữu ích. Hãy tóm tắt chi tiết nội dung chương truyện này.
+  `Tóm tắt chi tiết nội dung chương truyện sau:
+
+${content}
 
 Tóm tắt nên bao gồm:
 • Mở đầu: Bối cảnh, nhân vật, và hoàn cảnh khởi đầu của chương
@@ -58,15 +61,13 @@ Tóm tắt nên bao gồm:
 • Chi tiết đáng chú ý: Những sự kiện bất ngờ, bước ngoặt, hoặc thông tin quan tiết
 • Kết thúc: Tình huống kết thúc của chương và gợi ý cho chương sau
 
-Độ dài: Chi tiết, khoảng 8-12 câu hoặc dạng gạch đầu dòng đầy đủ. Giọng văn: tự nhiên, dễ hiểu, dạng gạch đầu dòng. Duy trì giọng văn trong nội dung gốc.
+Viết chi tiết khoảng 8-12 câu hoặc dạng gạch đầu dòng đầy đủ. Giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc. Không viết lời mở đầu hay giải thích.
 
 Tránh:
 • Không đưa ra ý kiến cá nhân hoặc phân tích sâu
 • Không sao chép nguyên văn từ nội dung gốc
 • Không sử dụng ngôn ngữ quá phức tạp hoặc học thuật
-
-Nội dung chương:
-${content}`;
+`;
 
 export const AI_SUMMARY_PROMPT = (content: string, length: SummaryLength = 'medium'): string => {
   switch (length) {
