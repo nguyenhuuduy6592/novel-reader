@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getNovel, getCurrentChapter, listChapters, removeNovel } from '@/lib/indexedDB';
+import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel } from '@/lib/indexedDB';
 import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
-import { HomeIcon, TrashIcon } from '@/lib/icons';
+import { HomeIcon, TrashIcon, DownloadIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -67,6 +67,32 @@ export default function NovelPage() {
     }
   };
 
+  const handleExportNovel = async () => {
+    if (!novel) return;
+    try {
+      const exportedNovel = await exportNovel(slug);
+      if (!exportedNovel) {
+        alert('Failed to export novel.');
+        return;
+      }
+
+      // Create a blob and download it
+      const json = JSON.stringify(exportedNovel, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${novel.book.slug}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export novel:', error);
+      alert('Failed to export novel. Please try again.');
+    }
+  };
+
   if (!novel) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -91,6 +117,13 @@ export default function NovelPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Novel Details</h1>
         <div className="flex gap-2">
+          <NavButton
+            label="Export"
+            icon={<DownloadIcon />}
+            onClick={handleExportNovel}
+            ariaLabel="Export novel"
+            className="bg-green-500 hover:bg-green-600 active:bg-green-700 focus:bg-green-700"
+          />
           <NavButton
             label="Remove Novel"
             icon={<TrashIcon />}

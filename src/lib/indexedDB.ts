@@ -271,3 +271,34 @@ export async function saveChapterSummary(novelSlug: string, chapterSlug: string,
 
   db.close();
 }
+
+export async function exportNovel(slug: string): Promise<Novel | null> {
+  if (typeof window === 'undefined') return null;
+
+  const db = await openDB();
+
+  // Get novel metadata
+  const novel = await new Promise<Novel | null>((resolve, reject) => {
+    const tx = db.transaction(['novels'], 'readonly');
+    const novelsStore = tx.objectStore('novels');
+    const request = novelsStore.get(slug);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+
+  if (!novel) {
+    db.close();
+    return null;
+  }
+
+  // Get all chapters for this novel
+  const chapters = await listChapters(slug);
+
+  db.close();
+
+  // Combine novel metadata with chapters (same structure as import)
+  return {
+    ...novel,
+    chapters,
+  };
+}
