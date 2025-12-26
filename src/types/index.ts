@@ -24,6 +24,7 @@ export interface ChapterContent {
   slug?: string | undefined;
   name: string;
   content: string;
+  aiSummary?: string;
 }
 
 export interface ChapterInfo {

@@ -125,9 +125,18 @@ export default function NovelPage() {
                   href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
                   className="block p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-xs"
                 >
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium truncate">Ch {index + 1}: {chapterInfo.chapter.name}</span>
-                    <span className="text-gray-500 text-xs">→</span>
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {chapterInfo.chapter.aiSummary ? (
+                        <span className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold" title="AI summary available">
+                          AI
+                        </span>
+                      ) : (
+                        <span className="flex-shrink-0 inline-block w-5 h-5"></span>
+                      )}
+                      <span className="font-medium truncate">Ch {index + 1}: {chapterInfo.chapter.name}</span>
+                    </div>
+                    <span className="text-gray-500 text-xs flex-shrink-0">→</span>
                   </div>
                 </Link>
               ))}

@@ -55,10 +55,30 @@ export async function saveNovel(novel: Novel): Promise<void> {
   if (novel.chapters) {
     const chaptersStore = tx.objectStore('chapters');
     for (const chapterInfo of novel.chapters) {
+      const chapterId = `${novel.book.slug}-${chapterInfo.chapter.slug}`;
+
+      // Check if chapter already exists and has an AI summary
+      const existingChapter = await new Promise<StoredChapter | undefined>((resolve, reject) => {
+        const request = chaptersStore.get(chapterId);
+        request.onsuccess = () => resolve(request.result as StoredChapter | undefined);
+        request.onerror = () => reject(request.error);
+      });
+
+      // Preserve AI summary if it exists
+      const chapterToSave = existingChapter?.chapter.chapter.aiSummary
+        ? {
+            ...chapterInfo,
+            chapter: {
+              ...chapterInfo.chapter,
+              aiSummary: existingChapter.chapter.chapter.aiSummary,
+            },
+          }
+        : chapterInfo;
+
       const storedChapter: StoredChapter = {
-        id: `${novel.book.slug}-${chapterInfo.chapter.slug}`,
+        id: chapterId,
         novelSlug: novel.book.slug,
-        chapter: chapterInfo,
+        chapter: chapterToSave,
       };
       await new Promise<void>((resolve, reject) => {
         const request = chaptersStore.put(storedChapter);
@@ -214,4 +234,38 @@ export async function getChapter(novelSlug: string, chapterSlug: string): Promis
     };
     request.onerror = () => reject(request.error);
   }).finally(() => db.close());
+}
+
+export async function saveChapterSummary(novelSlug: string, chapterSlug: string, summary: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const db = await openDB();
+  const tx = db.transaction(['chapters'], 'readwrite');
+  const chaptersStore = tx.objectStore('chapters');
+
+  const id = `${novelSlug}-${chapterSlug}`;
+
+  // First get the existing chapter
+  const existingChapter = await new Promise<StoredChapter | undefined>((resolve, reject) => {
+    const request = chaptersStore.get(id);
+    request.onsuccess = () => resolve(request.result as StoredChapter | undefined);
+    request.onerror = () => reject(request.error);
+  });
+
+  if (!existingChapter) {
+    db.close();
+    throw new Error('Chapter not found');
+  }
+
+  // Update the chapter with the summary
+  existingChapter.chapter.chapter.aiSummary = summary;
+
+  // Save back to DB
+  await new Promise<void>((resolve, reject) => {
+    const request = chaptersStore.put(existingChapter);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+
+  db.close();
 }

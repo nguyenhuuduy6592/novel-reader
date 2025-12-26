@@ -6,7 +6,8 @@
       "Bash(npm run dev)",
       "mcp__playwright*",
       "WebSearch",
-      "Bash(timeout /t*)"
+      "Bash(timeout /t*)",
+      "Bash(npm run build)"
     ]
   }
 }

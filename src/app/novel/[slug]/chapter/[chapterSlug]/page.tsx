@@ -3,13 +3,15 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getChapter, saveCurrentChapter, listChapters } from '@/lib/indexedDB';
+import { getChapter, saveCurrentChapter, listChapters, saveChapterSummary } from '@/lib/indexedDB';
+import { generateSummary as generateSummaryFromApi } from '@/lib/openrouter';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon, ThemeIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { ThemeSelect } from '@/components/ThemeSelect';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import { AiSummary } from '@/components/AiSummary';
 import {
   BACKGROUND_OPTIONS,
   FONT_OPTIONS,
@@ -17,6 +19,7 @@ import {
   LINE_HEIGHT_OPTIONS,
   PADDING_OPTIONS,
 } from '@/constants/theme';
+import { AI_MODEL_OPTIONS, DEFAULT_AI_MODEL } from '@/constants/ai';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -34,6 +37,15 @@ export default function ChapterPage() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const loadingRef = useRef<string | null>(null);
+  const autoGenerateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef(true);
+
+  // AI settings
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiModel, setAiModel] = useState<string>(DEFAULT_AI_MODEL);
+  const [aiAutoGenerate, setAiAutoGenerate] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const loadChapter = useCallback(async (targetSlug: string, preFetchedChapter?: ChapterInfo | null) => {
     const requestId = `${slug}-${targetSlug}`;
@@ -134,11 +146,67 @@ export default function ChapterPage() {
     }
   }, [slug, chapter, loadChapter]);
 
+  // Generate AI summary
+  const generateSummary = useCallback(async () => {
+    if (!chapter || !aiApiKey) {
+      setSummaryError('Please set your OpenRouter API key in settings.');
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    setSummaryError(null);
+
+    try {
+      const summary = await generateSummaryFromApi({
+        content: chapter.chapter.content,
+        apiKey: aiApiKey,
+        model: aiModel,
+      });
+
+      // Save to IndexedDB
+      await saveChapterSummary(slug, chapterSlug, summary);
+
+      // Reload chapter to get the updated summary
+      const updatedChapter = await getChapter(slug, chapterSlug);
+      if (updatedChapter) {
+        setChapter(updatedChapter);
+      }
+    } catch (err) {
+      setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  }, [chapter, aiApiKey, aiModel, slug, chapterSlug]);
+
+  // Auto-generate summary when chapter loads if enabled and no summary exists
+  // Add 1s delay to avoid triggering for users quickly navigating through chapters
+  useEffect(() => {
+    // Clear any pending timeout when chapter changes or settings change
+    if (autoGenerateTimeoutRef.current) {
+      clearTimeout(autoGenerateTimeoutRef.current);
+      autoGenerateTimeoutRef.current = null;
+    }
+
+    if (chapter && aiAutoGenerate && !chapter.chapter.aiSummary && aiApiKey) {
+      autoGenerateTimeoutRef.current = setTimeout(() => {
+        generateSummary();
+        autoGenerateTimeoutRef.current = null;
+      }, 1000);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (autoGenerateTimeoutRef.current) {
+        clearTimeout(autoGenerateTimeoutRef.current);
+      }
+    };
+  }, [chapter, aiAutoGenerate, aiApiKey, generateSummary]);
+
   useEffect(() => {
     loadChapter(chapterSlug);
   }, [slug, chapterSlug, loadChapter]);
 
-  // Load theme config on mount
+  // Load theme config and AI settings on mount
   useEffect(() => {
     const saved = localStorage.getItem('readingTheme');
     if (saved) {
@@ -149,6 +217,22 @@ export default function ChapterPage() {
         // Invalid JSON, use defaults
       }
     }
+
+    // Load AI settings
+    const aiSettings = localStorage.getItem('aiSettings');
+    if (aiSettings) {
+      try {
+        const parsed = JSON.parse(aiSettings);
+        setAiApiKey(parsed.apiKey || '');
+        setAiModel(parsed.model || DEFAULT_AI_MODEL);
+        setAiAutoGenerate(parsed.autoGenerate ?? false);
+      } catch {
+        // Invalid JSON, use defaults
+      }
+    }
+
+    // Mark initial mount complete after loading
+    isInitialMount.current = false;
   }, []);
 
   useEffect(() => {
@@ -165,6 +249,18 @@ export default function ChapterPage() {
     };
     document.documentElement.style.setProperty('--reading-font-family', fontMap[themeConfig.fontFamily]);
   }, [themeConfig]);
+
+  // Save AI settings to localStorage (skip initial mount to avoid overwriting)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      return;
+    }
+    localStorage.setItem('aiSettings', JSON.stringify({
+      apiKey: aiApiKey,
+      model: aiModel,
+      autoGenerate: aiAutoGenerate,
+    }));
+  }, [aiApiKey, aiModel, aiAutoGenerate]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -272,7 +368,7 @@ export default function ChapterPage() {
             className="mb-6 p-4 bg-gray-100 rounded-lg animate-in slide-in-from-top-2 duration-200 ease-out"
           >
             <h3 className="font-bold mb-3 text-lg">Reading Settings</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mb-4">
               <ThemeSelect
                 label="Background"
                 value={themeConfig.background}
@@ -304,6 +400,37 @@ export default function ChapterPage() {
                 options={PADDING_OPTIONS}
               />
             </div>
+
+            <h4 className="font-bold mb-2 text-md mt-4">AI Summary Settings</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div>
+                <label className="block mb-1 font-medium">OpenRouter API Key</label>
+                <input
+                  type="password"
+                  value={aiApiKey}
+                  onChange={(e) => setAiApiKey(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="sk-or-..."
+                />
+              </div>
+              <ThemeSelect
+                label="AI Model"
+                value={aiModel}
+                onChange={(v) => setAiModel(v)}
+                options={AI_MODEL_OPTIONS}
+              />
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 cursor-pointer p-2">
+                  <input
+                    type="checkbox"
+                    checked={aiAutoGenerate}
+                    onChange={(e) => setAiAutoGenerate(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span className="font-medium">Auto-generate summary</span>
+                </label>
+              </div>
+            </div>
           </div>
         )}
 
@@ -311,6 +438,14 @@ export default function ChapterPage() {
           <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center pb-4 border-b border-current/20">
             {chapter.chapter.name}
           </h1>
+
+          <AiSummary
+            apiKey={aiApiKey}
+            summary={chapter.chapter.aiSummary ?? null}
+            isGenerating={isGeneratingSummary}
+            error={summaryError}
+            onGenerate={generateSummary}
+          />
 
           <div
             className="prose prose-lg max-w-none"
