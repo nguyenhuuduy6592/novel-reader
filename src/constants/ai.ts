@@ -12,7 +12,23 @@ export const AI_MODEL_OPTIONS = [
   { value: 'deepseek/deepseek-r1-0528:free', label: 'DeepSeek R1 (Free)' },
 ] as const;
 
+export type AiProvider = 'openrouter' | 'google';
+
+export const AI_PROVIDER_OPTIONS = [
+  { value: 'openrouter', label: 'OpenRouter' },
+  { value: 'google', label: 'Google AI' },
+] as const;
+
+export const DEFAULT_AI_PROVIDER: AiProvider = 'openrouter';
+
 export const DEFAULT_AI_MODEL = 'openai/gpt-oss-120b:free' as const;
+
+export const GOOGLE_AI_MODEL_OPTIONS = [
+  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+] as const;
+
+export const DEFAULT_GOOGLE_AI_MODEL = 'gemini-2.5-flash-lite' as const;
 
 export const AI_SUMMARY_LENGTH_OPTIONS = [
   { value: 'short', label: 'Short (2-3 sentences)' },

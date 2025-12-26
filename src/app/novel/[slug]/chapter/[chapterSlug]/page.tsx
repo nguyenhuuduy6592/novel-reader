@@ -19,7 +19,18 @@ import {
   LINE_HEIGHT_OPTIONS,
   PADDING_OPTIONS,
 } from '@/constants/theme';
-import { AI_MODEL_OPTIONS, DEFAULT_AI_MODEL, AI_SUMMARY_LENGTH_OPTIONS, DEFAULT_AI_SUMMARY_LENGTH, type SummaryLength } from '@/constants/ai';
+import {
+  AI_MODEL_OPTIONS,
+  DEFAULT_AI_MODEL,
+  AI_SUMMARY_LENGTH_OPTIONS,
+  DEFAULT_AI_SUMMARY_LENGTH,
+  AI_PROVIDER_OPTIONS,
+  DEFAULT_AI_PROVIDER,
+  GOOGLE_AI_MODEL_OPTIONS,
+  DEFAULT_GOOGLE_AI_MODEL,
+  type SummaryLength,
+  type AiProvider
+} from '@/constants/ai';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -45,7 +56,15 @@ export default function ChapterPage() {
   // Initialize AI settings from localStorage immediately (synchronously on first render)
   const getInitialAiSettings = () => {
     if (typeof window === 'undefined') {
-      return { apiKey: '', model: DEFAULT_AI_MODEL, autoGenerate: false, summaryLength: DEFAULT_AI_SUMMARY_LENGTH };
+      return {
+        apiKey: '',
+        googleApiKey: '',
+        provider: DEFAULT_AI_PROVIDER,
+        model: DEFAULT_AI_MODEL,
+        googleModel: DEFAULT_GOOGLE_AI_MODEL,
+        autoGenerate: false,
+        summaryLength: DEFAULT_AI_SUMMARY_LENGTH
+      };
     }
     const aiSettings = localStorage.getItem('aiSettings');
     if (aiSettings) {
@@ -53,7 +72,10 @@ export default function ChapterPage() {
         const parsed = JSON.parse(aiSettings);
         return {
           apiKey: parsed.apiKey || '',
+          googleApiKey: parsed.googleApiKey || '',
+          provider: parsed.provider || DEFAULT_AI_PROVIDER,
           model: parsed.model || DEFAULT_AI_MODEL,
+          googleModel: parsed.googleModel || DEFAULT_GOOGLE_AI_MODEL,
           autoGenerate: parsed.autoGenerate ?? false,
           summaryLength: parsed.summaryLength || DEFAULT_AI_SUMMARY_LENGTH,
         };
@@ -61,14 +83,25 @@ export default function ChapterPage() {
         // Invalid JSON, use defaults
       }
     }
-    return { apiKey: '', model: DEFAULT_AI_MODEL, autoGenerate: false, summaryLength: DEFAULT_AI_SUMMARY_LENGTH };
+    return {
+      apiKey: '',
+      googleApiKey: '',
+      provider: DEFAULT_AI_PROVIDER,
+      model: DEFAULT_AI_MODEL,
+      googleModel: DEFAULT_GOOGLE_AI_MODEL,
+      autoGenerate: false,
+      summaryLength: DEFAULT_AI_SUMMARY_LENGTH
+    };
   };
 
   const initialAiSettings = getInitialAiSettings();
 
   // AI settings
   const [aiApiKey, setAiApiKey] = useState(initialAiSettings.apiKey);
+  const [aiGoogleApiKey, setAiGoogleApiKey] = useState(initialAiSettings.googleApiKey);
+  const [aiProvider, setAiProvider] = useState<AiProvider>(initialAiSettings.provider);
   const [aiModel, setAiModel] = useState<string>(initialAiSettings.model);
+  const [aiGoogleModel, setAiGoogleModel] = useState<string>(initialAiSettings.googleModel);
   const [aiAutoGenerate, setAiAutoGenerate] = useState(initialAiSettings.autoGenerate);
   const [aiSummaryLength, setAiSummaryLength] = useState<SummaryLength>(initialAiSettings.summaryLength);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -176,10 +209,18 @@ export default function ChapterPage() {
 
   // Generate AI summary
   const generateSummary = useCallback(async () => {
-    if (!chapter || !aiApiKey) {
-      setSummaryError('Please set your OpenRouter API key in settings.');
+    if (!chapter) {
       return;
     }
+
+    // Check API key based on provider
+    const apiKey = aiProvider === 'google' ? aiGoogleApiKey : aiApiKey;
+    if (!apiKey) {
+      setSummaryError(`Please set your ${aiProvider === 'google' ? 'Google AI' : 'OpenRouter'} API key in settings.`);
+      return;
+    }
+
+    const model = aiProvider === 'google' ? aiGoogleModel : aiModel;
 
     setIsGeneratingSummary(true);
     setSummaryError(null);
@@ -187,8 +228,9 @@ export default function ChapterPage() {
     try {
       const summary = await generateSummaryFromApi({
         content: chapter.chapter.content,
-        apiKey: aiApiKey,
-        model: aiModel,
+        apiKey,
+        provider: aiProvider,
+        model,
         length: aiSummaryLength,
       });
 
@@ -205,7 +247,7 @@ export default function ChapterPage() {
     } finally {
       setIsGeneratingSummary(false);
     }
-  }, [chapter, aiApiKey, aiModel, aiSummaryLength, slug]);
+  }, [chapter, aiApiKey, aiGoogleApiKey, aiProvider, aiModel, aiGoogleModel, aiSummaryLength, slug]);
 
   // Auto-generate summary when chapter loads if enabled and no summary exists
   // Add 1s delay to avoid triggering for users quickly navigating through chapters
@@ -216,7 +258,9 @@ export default function ChapterPage() {
       autoGenerateTimeoutRef.current = null;
     }
 
-    if (chapter && aiAutoGenerate && !chapter.chapter.aiSummary && aiApiKey) {
+    if (chapter && aiAutoGenerate && !chapter.chapter.aiSummary) {
+      const apiKey = aiProvider === 'google' ? aiGoogleApiKey : aiApiKey;
+      if (!apiKey) return;
       autoGenerateTimeoutRef.current = setTimeout(() => {
         generateSummary();
         autoGenerateTimeoutRef.current = null;
@@ -229,7 +273,7 @@ export default function ChapterPage() {
         clearTimeout(autoGenerateTimeoutRef.current);
       }
     };
-  }, [chapter, aiAutoGenerate, aiApiKey, generateSummary]);
+  }, [chapter, aiAutoGenerate, aiGoogleApiKey, aiApiKey, aiProvider, generateSummary]);
 
   useEffect(() => {
     currentChapterSlugRef.current = chapterSlug;
@@ -280,11 +324,14 @@ export default function ChapterPage() {
 
     localStorage.setItem('aiSettings', JSON.stringify({
       apiKey: aiApiKey,
+      googleApiKey: aiGoogleApiKey,
+      provider: aiProvider,
       model: aiModel,
+      googleModel: aiGoogleModel,
       autoGenerate: aiAutoGenerate,
       summaryLength: aiSummaryLength,
     }));
-  }, [aiApiKey, aiModel, aiAutoGenerate, aiSummaryLength]);
+  }, [aiApiKey, aiGoogleApiKey, aiProvider, aiModel, aiGoogleModel, aiAutoGenerate, aiSummaryLength]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -428,22 +475,52 @@ export default function ChapterPage() {
 
             <h4 className="font-bold mb-2 text-md mt-4">AI Summary Settings</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">OpenRouter API Key</label>
-                <input
-                  type="password"
-                  value={aiApiKey}
-                  onChange={(e) => setAiApiKey(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  placeholder="sk-or-..."
-                />
-              </div>
               <ThemeSelect
-                label="AI Model"
-                value={aiModel}
-                onChange={(v) => setAiModel(v)}
-                options={AI_MODEL_OPTIONS}
+                label="AI Provider"
+                value={aiProvider}
+                onChange={(v) => setAiProvider(v as AiProvider)}
+                options={AI_PROVIDER_OPTIONS}
               />
+              {aiProvider === 'openrouter' && (
+                <>
+                  <div>
+                    <label className="block mb-1 font-medium">OpenRouter API Key</label>
+                    <input
+                      type="password"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      placeholder="sk-or-..."
+                    />
+                  </div>
+                  <ThemeSelect
+                    label="AI Model"
+                    value={aiModel}
+                    onChange={(v) => setAiModel(v)}
+                    options={AI_MODEL_OPTIONS}
+                  />
+                </>
+              )}
+              {aiProvider === 'google' && (
+                <>
+                  <div>
+                    <label className="block mb-1 font-medium">Google AI API Key</label>
+                    <input
+                      type="password"
+                      value={aiGoogleApiKey}
+                      onChange={(e) => setAiGoogleApiKey(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      placeholder="AIza..."
+                    />
+                  </div>
+                  <ThemeSelect
+                    label="AI Model"
+                    value={aiGoogleModel}
+                    onChange={(v) => setAiGoogleModel(v)}
+                    options={GOOGLE_AI_MODEL_OPTIONS}
+                  />
+                </>
+              )}
               <ThemeSelect
                 label="Summary Length"
                 value={aiSummaryLength}
