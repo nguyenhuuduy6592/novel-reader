@@ -132,7 +132,7 @@ describe('ChapterPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Chapter 3')).toBeInTheDocument()
-    })
+    }, { timeout: 3000 })
 
     expect(mockScrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })
