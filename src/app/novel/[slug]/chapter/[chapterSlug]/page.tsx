@@ -39,6 +39,8 @@ export default function ChapterPage() {
   // Chapter navigation hook - wrap callback in useCallback to prevent infinite reload loop
   const handleChapterChange = useCallback((ch: ChapterInfo | null) => {
     setChapter(ch);
+    // Reset summary error when changing chapters
+    setSummaryError(null);
     if (ch) {
       setIsLoading(false);
       setError(null);

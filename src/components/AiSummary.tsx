@@ -51,31 +51,6 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
     );
   }
 
-  if (error) {
-    return (
-      <details
-        ref={detailsRef}
-        className="mb-4 group"
-        onToggle={handleToggle}
-        open
-      >
-        <summary className="cursor-pointer p-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-between transition-colors">
-          <span className="font-semibold text-red-700">AI Summary Error</span>
-          <span className="text-red-500 group-open:rotate-180 transition-transform">▼</span>
-        </summary>
-        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-b-lg">
-          <p className="text-red-600 text-sm whitespace-pre-line">{error}</p>
-          <button
-            onClick={onGenerate}
-            className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 cursor-pointer"
-          >
-            Retry
-          </button>
-        </div>
-      </details>
-    );
-  }
-
   if (!summary) {
     return (
       <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -91,27 +66,50 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
   }
 
   return (
-    <details
-      ref={detailsRef}
-      className="mb-4 group"
-      onToggle={handleToggle}
-      open={true}
-    >
-      <summary className="cursor-pointer p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-between transition-colors">
-        <span className="font-semibold text-amber-800">AI Summary</span>
-        <span className="text-amber-600 group-open:rotate-180 transition-transform">▼</span>
-      </summary>
-      <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-b-lg">
-        <div className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-3">
-          {summary}
-        </div>
-        <button
-          onClick={onGenerate}
-          className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
+    <>
+      {error && (
+        <details
+          className="mb-4 group"
+          onToggle={handleToggle}
+          open
         >
-          Regenerate Summary
-        </button>
-      </div>
-    </details>
+          <summary className="cursor-pointer p-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-between transition-colors">
+            <span className="font-semibold text-red-700">AI Summary Error</span>
+            <span className="text-red-500 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-b-lg">
+            <p className="text-red-600 text-sm whitespace-pre-line">{error}</p>
+            <button
+              onClick={onGenerate}
+              className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        </details>
+      )}
+      <details
+        ref={detailsRef}
+        className="mb-4 group"
+        onToggle={handleToggle}
+        open={true}
+      >
+        <summary className="cursor-pointer p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-between transition-colors">
+          <span className="font-semibold text-amber-800">AI Summary</span>
+          <span className="text-amber-600 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+        <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-b-lg">
+          <div className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-3">
+            {summary}
+          </div>
+          <button
+            onClick={onGenerate}
+            className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
+          >
+            Regenerate Summary
+          </button>
+        </div>
+      </details>
+    </>
   );
 }
