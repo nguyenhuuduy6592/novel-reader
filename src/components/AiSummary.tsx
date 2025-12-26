@@ -13,12 +13,6 @@ interface AiSummaryProps {
 }
 
 export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate }: AiSummaryProps) {
-  // Hide completely if no AI settings, no API key is set, AND no summary exists
-  // If a summary already exists, show it even without API key
-  if (!aiSettings || (!aiSettings.providers[aiSettings.provider]?.apiKey && !summary)) {
-    return null;
-  }
-
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
   // Restore collapsed state on mount
@@ -32,6 +26,12 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
       detailsRef.current.open = true;
     }
   }, []);
+
+  // Hide completely if no AI settings, no API key is set, AND no summary exists
+  // If a summary already exists, show it even without API key
+  if (!aiSettings || (!aiSettings.providers[aiSettings.provider]?.apiKey && !summary)) {
+    return null;
+  }
 
   // Save collapsed state on toggle
   const handleToggle = () => {
