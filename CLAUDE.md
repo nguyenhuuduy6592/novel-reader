@@ -182,3 +182,82 @@ Remote images from `static.truyenchucv.org` are allowed in `next.config.ts`.
 - Chapter content is sanitized using DOMPurify before rendering with `dangerouslySetInnerHTML`
 - API keys are stored in localStorage (client-side only)
 - No server-side API key storage or transmission
+
+## Code Style Guidelines
+
+### TypeScript & Types
+- Strict TypeScript mode enabled
+- Use explicit types for function parameters and return values
+- Define interfaces in `src/types/` directory
+- Use `interface` for object types, `type` for unions/aliases
+
+### Imports
+- Absolute imports with `@/` prefix for `src/` directory
+- Group imports: React/types first, then external packages, then local imports
+- Use named imports over default when possible
+
+### Naming Conventions
+- **Components**: PascalCase (e.g., `PageLayout`)
+- **Functions/Variables**: camelCase (e.g., `saveNovel`)
+- **Types/Interfaces**: PascalCase (e.g., `NovelInfo`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `DB_NAME`)
+
+### Formatting
+- No semicolons at statement ends
+- Single quotes for strings
+- 2-space indentation
+- Consistent spacing around operators and braces
+
+### React Patterns
+- Functional components with hooks
+- Default props with destructuring and defaults
+- Proper TypeScript props interfaces
+- Use `ReactNode` for children types
+
+## Implementation Rules
+
+### Component Architecture
+- **Client Components**: Mark with `'use client'` directive for interactive components
+- **Component Location**: Place UI components in `src/components/`, page components in `src/app/`
+- **Component Size**: Keep components focused and single-responsibility (<200 lines preferred)
+- **Props Destructuring**: Destructure props in function signature with TypeScript types
+- **Memoization**: Use `React.memo()` for components that re-render unnecessarily
+
+### State Management
+- **Local State**: Use `useState` for component-specific state
+- **Derived State**: Compute from props/state, avoid redundant state
+- **Form State**: Use controlled components with proper validation
+- **Async State**: Use `useEffect` with cleanup for async operations
+
+### Data Layer
+- **IndexedDB**: Use `src/lib/indexedDB.ts` for client-side persistence
+- **Data Validation**: Validate data before storage (type guards)
+- **Error Handling**: Wrap IndexedDB operations in try/catch with user-friendly errors
+
+### Performance Guidelines
+- **Image Optimization**: Use Next.js `<Image>` component for images
+- **Debouncing**: Debounce search/filter inputs to reduce re-renders
+- **Bundle Size**: Monitor bundle size, avoid unnecessary dependencies
+
+### Accessibility (a11y)
+- **Semantic HTML**: Use proper semantic elements (nav, main, article)
+- **ARIA Labels**: Add aria-labels to icon-only buttons
+- **Keyboard Navigation**: Ensure all interactive elements are keyboard accessible
+- **Focus Management**: Manage focus in modals and dynamic content
+
+### Error Handling Patterns
+- **Error Boundaries**: Wrap components in error boundaries for graceful failures
+- **User Feedback**: Show user-friendly error messages, not technical details
+- **Recovery**: Provide retry mechanisms for transient errors
+- **Loading States**: Show loading indicators during async operations
+
+## Code Review Checklist
+- [ ] TypeScript types are explicit and correct
+- [ ] Components are properly typed with interfaces
+- [ ] Error handling is comprehensive
+- [ ] Accessibility requirements are met
+- [ ] Performance considerations addressed
+- [ ] Code follows naming conventions
+- [ ] Imports are properly grouped
+- [ ] No console.log statements left in production code
+- [ ] Sensitive data is not hardcoded
