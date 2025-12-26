@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
@@ -18,7 +18,6 @@ export const metadata: Metadata = {
   title: "Novel Reader",
   description: "A web application for reading novels",
   manifest: "/manifest.json",
-  themeColor: "#10B981",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -33,6 +32,10 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#10B981",
 };
 
 export default function RootLayout({
