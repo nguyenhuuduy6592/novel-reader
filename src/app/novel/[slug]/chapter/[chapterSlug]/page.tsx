@@ -9,7 +9,6 @@ import { ChapterInfo } from '@/types';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon, ThemeIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
-import OfflineIndicator from '@/components/OfflineIndicator';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { ChapterContent } from '@/components/ChapterContent';
 import { useThemeConfig } from '@/hooks/useThemeConfig';
@@ -185,7 +184,6 @@ export default function ChapterPage() {
 
   return (
     <PageLayout padding="py-4 sm:py-8 sm:px-4">
-      <OfflineIndicator />
       <div className="mb-4 flex justify-between items-center">
         <div className="flex gap-2">
           <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
