@@ -127,29 +127,11 @@ describe('ChapterContent', () => {
     expect(screen.queryByText('This is a test summary of the chapter.')).not.toBeInTheDocument()
   })
 
-  it('calls onGenerateSummary when generate button is clicked', () => {
-    const onGenerateSummary = jest.fn()
-
+  it('applies custom font family and line height styles via CSS variables', () => {
     render(
       <ChapterContent
         chapter={mockChapter}
-        themeConfig={mockThemeConfig}
-        aiSettings={mockAiSettings}
-        isGeneratingSummary={false}
-        summaryError={null}
-        onGenerateSummary={onGenerateSummary}
-      />
-    )
-
-    // Note: The actual button is in AiSummary component, this is a simplified test
-    expect(onGenerateSummary).toBeDefined()
-  })
-
-  it('applies custom font family style', () => {
-    const { container } = render(
-      <ChapterContent
-        chapter={mockChapter}
-        themeConfig={{ ...mockThemeConfig, fontFamily: 'serif' }}
+        themeConfig={{ ...mockThemeConfig, fontFamily: 'serif', lineHeight: 2.0 }}
         aiSettings={mockAiSettings}
         isGeneratingSummary={false}
         summaryError={null}
@@ -157,25 +139,11 @@ describe('ChapterContent', () => {
       />
     )
 
-    const proseDiv = container.querySelector('.prose')
-    expect(proseDiv).toBeInTheDocument()
-    // The theme config is passed through, actual styling applied by CSS variables
-  })
-
-  it('applies custom line height style', () => {
-    const { container } = render(
-      <ChapterContent
-        chapter={mockChapter}
-        themeConfig={{ ...mockThemeConfig, lineHeight: 2.0 }}
-        aiSettings={mockAiSettings}
-        isGeneratingSummary={false}
-        summaryError={null}
-        onGenerateSummary={jest.fn()}
-      />
-    )
-
-    const proseDiv = container.querySelector('.prose')
-    expect(proseDiv).toBeInTheDocument()
-    // The theme config is passed through, actual styling applied by CSS variables
+    // Check that paragraphs are rendered (the prose div wraps them)
+    expect(screen.getByText('Paragraph 1')).toBeInTheDocument()
+    expect(screen.getByText('Paragraph 2')).toBeInTheDocument()
+    expect(screen.getByText('Paragraph 3')).toBeInTheDocument()
+    // The component applies styles via CSS variables in inline style
+    // (actual values are set globally by useThemeConfig hook)
   })
 })

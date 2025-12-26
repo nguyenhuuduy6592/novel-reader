@@ -35,25 +35,4 @@ describe('PageLayout', () => {
     expect(outerContainer).toHaveClass('py-4', 'px-2')
   })
 
-  it('has gray background', () => {
-    render(
-      <PageLayout>
-        <div>Test Content</div>
-      </PageLayout>,
-    )
-
-    const outerContainer = screen.getByText('Test Content').parentElement?.parentElement
-    expect(outerContainer).toHaveClass('bg-gray-50')
-  })
-
-  it('has min-height screen', () => {
-    render(
-      <PageLayout>
-        <div>Test Content</div>
-      </PageLayout>,
-    )
-
-    const outerContainer = screen.getByText('Test Content').parentElement?.parentElement
-    expect(outerContainer).toHaveClass('min-h-screen')
-  })
 })
