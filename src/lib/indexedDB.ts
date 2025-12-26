@@ -45,7 +45,8 @@ export async function saveNovel(novel: Novel): Promise<void> {
 
   // Save novel (without chapters to save space)
   const novelsStore = tx.objectStore('novels');
-  const novelToSave = { ...novel, chapters: undefined };
+  const novelToSave = { ...novel };
+  delete novelToSave.chapters;
   await new Promise<void>((resolve, reject) => {
     const request = novelsStore.put(novelToSave);
     request.onsuccess = () => resolve();
