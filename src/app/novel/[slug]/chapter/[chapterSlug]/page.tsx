@@ -40,6 +40,7 @@ export default function ChapterPage() {
   const autoGenerateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialMount = useRef(true);
   const isAiSettingsInitiallyLoaded = useRef(false);
+  const currentChapterSlugRef = useRef<string>(chapterSlug);
 
   // Initialize AI settings from localStorage immediately (synchronously on first render)
   const getInitialAiSettings = () => {
@@ -90,6 +91,7 @@ export default function ChapterPage() {
 
       if (ch) {
         setChapter(ch);
+        currentChapterSlugRef.current = targetSlug;
         await saveCurrentChapter(slug, targetSlug);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
@@ -191,10 +193,10 @@ export default function ChapterPage() {
       });
 
       // Save to IndexedDB
-      await saveChapterSummary(slug, chapterSlug, summary);
+      await saveChapterSummary(slug, currentChapterSlugRef.current, summary);
 
       // Reload chapter to get the updated summary
-      const updatedChapter = await getChapter(slug, chapterSlug);
+      const updatedChapter = await getChapter(slug, currentChapterSlugRef.current);
       if (updatedChapter) {
         setChapter(updatedChapter);
       }
@@ -203,7 +205,7 @@ export default function ChapterPage() {
     } finally {
       setIsGeneratingSummary(false);
     }
-  }, [chapter, aiApiKey, aiModel, aiSummaryLength, slug, chapterSlug]);
+  }, [chapter, aiApiKey, aiModel, aiSummaryLength, slug]);
 
   // Auto-generate summary when chapter loads if enabled and no summary exists
   // Add 1s delay to avoid triggering for users quickly navigating through chapters
@@ -230,6 +232,7 @@ export default function ChapterPage() {
   }, [chapter, aiAutoGenerate, aiApiKey, generateSummary]);
 
   useEffect(() => {
+    currentChapterSlugRef.current = chapterSlug;
     loadChapter(chapterSlug);
   }, [slug, chapterSlug, loadChapter]);
 
@@ -303,6 +306,7 @@ export default function ChapterPage() {
       // Extract chapter slug from URL since useParams doesn't update with pushState
       const pathParts = window.location.pathname.split('/');
       const newChapterSlug = pathParts[pathParts.length - 1];
+      currentChapterSlugRef.current = newChapterSlug;
       loadChapter(newChapterSlug);
     };
 
