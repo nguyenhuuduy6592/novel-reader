@@ -14,9 +14,7 @@ const mockPushState = jest.fn()
 const mockReplaceState = jest.fn()
 
 global.scrollTo = mockScrollTo
-// @ts-ignore - mocking History API
 global.window.history.pushState = mockPushState
-// @ts-ignore - mocking History API
 global.window.history.replaceState = mockReplaceState
 
 jest.mock('next/navigation', () => ({
