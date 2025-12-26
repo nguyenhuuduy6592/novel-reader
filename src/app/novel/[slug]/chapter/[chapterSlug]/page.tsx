@@ -96,7 +96,9 @@ export default function ChapterPage() {
         };
       });
     } catch (err) {
-      setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate summary';
+      const timestamp = new Date().toLocaleString();
+      setSummaryError(`${errorMessage}\n\n[${timestamp}]`);
       // Disable auto-generate on error to avoid repeated failures
       if (autoGenerate) {
         setAiSettings({ ...aiSettings, autoGenerate: false });
