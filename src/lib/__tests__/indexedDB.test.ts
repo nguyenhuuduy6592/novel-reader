@@ -14,6 +14,7 @@ import {
   getCurrentChapter,
   getChapter,
   saveChapterSummary,
+  exportNovel,
 } from '../indexedDB';
 import { Novel } from '@/types';
 
@@ -239,6 +240,66 @@ describe('indexedDB', () => {
 
       const chapter = await getChapter('test-novel', 'chap-1');
       expect(chapter?.chapter.aiSummary).toBe('Updated summary');
+    });
+  });
+
+  describe('exportNovel', () => {
+    it('exports novel with all chapters', async () => {
+      await saveNovel(mockNovel);
+
+      const exported = await exportNovel('test-novel');
+
+      expect(exported).toBeDefined();
+      expect(exported?.book.slug).toBe('test-novel');
+      expect(exported?.book.name).toBe('Test Novel');
+      expect(exported?.chapters).toHaveLength(2);
+      expect(exported?.chapters[0]?.chapter.slug).toBe('chap-1');
+      expect(exported?.chapters[1]?.chapter.slug).toBe('chap-2');
+    });
+
+    it('includes AI summaries in export', async () => {
+      await saveNovel(mockNovel);
+      await saveChapterSummary('test-novel', 'chap-1', 'AI-generated summary');
+
+      const exported = await exportNovel('test-novel');
+
+      expect(exported?.chapters[0]?.chapter.aiSummary).toBe('AI-generated summary');
+    });
+
+    it('returns null for non-existent novel', async () => {
+      const exported = await exportNovel('non-existent');
+      expect(exported).toBeNull();
+    });
+
+    it('exports novel in same structure as import', async () => {
+      await saveNovel(mockNovel);
+
+      const exported = await exportNovel('test-novel');
+
+      // Verify structure matches Novel type with chapters
+      expect(exported).toMatchObject({
+        book: {
+          bookId: expect.any(Number),
+          slug: expect.any(String),
+          coverUrl: expect.any(String),
+          name: expect.any(String),
+          chapterCount: expect.any(Number),
+          author: { name: expect.any(String) },
+        },
+        chapters: expect.any(Array),
+      });
+    });
+
+    it('exports novel without chapters when none exist', async () => {
+      const novelWithoutChapters: Novel = {
+        book: mockNovel.book,
+      };
+      await saveNovel(novelWithoutChapters);
+
+      const exported = await exportNovel('test-novel');
+
+      expect(exported?.book.slug).toBe('test-novel');
+      expect(exported?.chapters).toEqual([]);
     });
   });
 });
