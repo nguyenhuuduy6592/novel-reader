@@ -1,35 +1,29 @@
 // Configuration
-const MAX_RETRIES = 3;
-const BATCH_SIZE = 5;
+const MAX_RETRIES = 3; // max retries for fetching a chapter
+const BATCH_SIZE = 10; // chapters per batch
 const RETRY_DELAY = 1000; // ms between retries
+
+// Global variable to store in-memory progress (survives across multiple calls in same session)
+window.__novelExtractorProgress__ = window.__novelExtractorProgress__ || {};
 
 // Get storage key for this novel
 function getStorageKey(slug) {
   return `novel-extractor-${slug}`;
 }
 
-// Load progress from localStorage
+// Load progress from global variable
 function loadProgress(slug) {
-  const key = getStorageKey(slug);
-  const data = localStorage.getItem(key);
-  if (!data) return null;
-  try {
-    return JSON.parse(data);
-  } catch {
-    return null;
-  }
+  return window.__novelExtractorProgress__[slug] || null;
 }
 
-// Save progress to localStorage
+// Save progress to global variable
 function saveProgress(slug, progress) {
-  const key = getStorageKey(slug);
-  localStorage.setItem(key, JSON.stringify(progress));
+  window.__novelExtractorProgress__[slug] = progress;
 }
 
-// Clear progress from localStorage
+// Clear progress from global variable
 function clearProgress(slug) {
-  const key = getStorageKey(slug);
-  localStorage.removeItem(key);
+  delete window.__novelExtractorProgress__[slug];
 }
 
 // Sleep utility for delays
@@ -166,7 +160,7 @@ async function extractNovel(novelUrl, options = {}) {
       if (resumeChoice) {
         chapters = progress.chapters;
         startIndex = chapters.length;
-        console.log(`Resuming from chapter ${startIndex + 1}`);
+        console.log(`Resuming from chapter ${startIndex + 1}, loaded ${chapters.length} chapters from memory`);
       } else if (clearExisting) {
         clearProgress(slug);
       }
@@ -211,35 +205,7 @@ async function extractNovelFromCurrentPage() {
   return await extractNovel(currentUrl);
 }
 
-// ============================================
-// USAGE EXAMPLES
-// ============================================
-
-// Example 1: Extract novel from current page (with resume prompt)
-// extractNovelFromCurrentPage().then(data => console.log(data));
-
-// Example 2: Extract with default settings (resume enabled)
-// extractNovel(window.location.href).then(data => console.log(data));
-
-// Example 3: Extract without resume capability
-// extractNovel(window.location.href, { resume: false }).then(data => console.log(data));
-
-// Example 4: Extract with resume and clear existing progress on cancel
-// extractNovel(window.location.href, { resume: true, clearExisting: true }).then(data => console.log(data));
-
-// Example 5: Manually clear progress for a novel
-// clearProgress('novel-slug-here');
-
-// Example 6: Check saved progress for a novel
-// const progress = loadProgress('novel-slug-here');
-// console.log(progress);
-
-// ============================================
-// CONFIGURATION
-// ============================================
-// MAX_RETRIES: Number of retry attempts for failed chapters (default: 3)
-// BATCH_SIZE: Number of chapters to fetch in parallel (default: 5)
-// RETRY_DELAY: Base delay between retries in milliseconds (default: 1000)
-
-
+// NOTE: Progress is stored in window.__novelExtractorProgress__ global variable
+// This means progress survives across script runs in the same browser session,
+// but will be lost if you close/refresh the page.
 extractNovelFromCurrentPage().then(data => console.log(data));
