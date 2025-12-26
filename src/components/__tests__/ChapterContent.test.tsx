@@ -141,7 +141,6 @@ describe('ChapterContent', () => {
       />
     )
 
-    const generateButton = screen.getByRole('button', { name: /generate/i })
     // Note: The actual button is in AiSummary component, this is a simplified test
     expect(onGenerateSummary).toBeDefined()
   })

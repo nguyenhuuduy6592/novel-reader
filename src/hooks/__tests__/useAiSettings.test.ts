@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { useAiSettings } from '@/hooks/useAiSettings'
 import { LOCAL_STORAGE_KEYS } from '@/constants/storage'
-import { AI_PROVIDERS, DEFAULT_AI_SETTINGS, DEFAULT_AI_PROVIDER } from '@/constants/ai'
+import { DEFAULT_AI_SETTINGS } from '@/constants/ai'
 
 describe('useAiSettings', () => {
   beforeEach(() => {

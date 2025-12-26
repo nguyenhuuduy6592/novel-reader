@@ -1,8 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import { ReadingThemeConfig, AiSettings } from '@/types'
-import { AiProvider } from '@/constants/ai'
-import { AI_PROVIDERS } from '@/constants/ai'
+import { AiProvider, AI_PROVIDERS } from '@/constants/ai'
 
 const mockThemeConfig: ReadingThemeConfig = {
   background: 'sepia',
