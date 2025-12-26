@@ -5,7 +5,7 @@ export interface ThemeOption {
   label: string;
 }
 
-export type SummaryLength = 'short' | 'medium' | 'long';
+export type SummaryLength = 'short' | 'medium';
 
 export type AiProvider = 'openrouter' | 'google';
 
@@ -148,7 +148,6 @@ export const createDefaultProvidersConfig = (): Record<AiProvider, AiProviderCon
 export const AI_SUMMARY_LENGTH_OPTIONS = [
   { value: 'short', label: 'Short (2-3 sentences)' },
   { value: 'medium', label: 'Medium (4-5 sentences)' },
-  { value: 'long', label: 'Long (Detailed)' },
 ] as const;
 
 export const DEFAULT_AI_SUMMARY_LENGTH: SummaryLength = 'short';
@@ -197,44 +196,12 @@ Tránh:
 • Không viết tất cả thành một đoạn văn duy nhất
 `;
 
-
-const LONG_PROMPT = (content: string) =>
-  `Tóm tắt chi tiết nội dung chương truyện sau:
-
-${content}
-
-Tóm tắt nên bao gồm:
-• Mở đầu: Bối cảnh, nhân vật, và hoàn cảnh khởi đầu của chương
-• Diễn biến chính: Các tình huống quan trọng, xung đột, và hành động của nhân vật
-• Sự phát triển: Biến đổi trong mối quan hệ giữa các nhân vật và tiến triển cốt truyện
-• Chi tiết đáng chú ý: Những sự kiện bất ngờ, bước ngoặt, hoặc thông tin quan tiết
-• Kết thúc: Tình huống kết thúc của chương và gợi ý cho chương sau
-
-QUAN TRỌNG:
-• Phải trả lời bằng TIẾNG VIỆT tự nhiên, không được dùng tiếng Anh hay ngôn ngữ khác
-• Viết chi tiết khoảng 8-12 câu hoặc dạng gạch đầu dòng đầy đủ
-• Chia tóm tắt thành nhiều đoạn văn rõ ràng, mỗi đoạn tập trung vào một phần của câu chuyện
-• Mỗi phần (mở đầu, diễn biến, phát triển, chi tiết, kết thúc) nên là một đoạn riêng biệt
-• Giọng văn tự nhiên, dễ hiểu, duy trì giọng văn trong nội dung gốc
-• Giọng văn phải tự nhiên như người Việt đang kể chuyện
-• Không viết lời mở đầu hay giải thích
-• Sử dụng xuống dòng để tách biệt các phần, giúp người đọc dễ theo dõi
-
-Tránh:
-• Không đưa ra ý kiến cá nhân hoặc phân tích sâu
-• Không sao chép nguyên văn từ nội dung gốc
-• Không sử dụng ngôn ngữ quá phức tạp hoặc học thuật
-• Không viết tất cả thành một đoạn văn duy nhất
-`;
-
-export const AI_SUMMARY_PROMPT = (content: string, length: SummaryLength = 'medium'): string => {
+export const AI_SUMMARY_PROMPT = (content: string, length: SummaryLength = 'short'): string => {
   switch (length) {
-    case 'short':
-      return SHORT_PROMPT(content);
-    case 'long':
-      return LONG_PROMPT(content);
     case 'medium':
-    default:
       return MEDIUM_PROMPT(content);
+    case 'short':
+    default:
+      return SHORT_PROMPT(content);
   }
 };

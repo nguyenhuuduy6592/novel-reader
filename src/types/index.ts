@@ -57,5 +57,5 @@ export interface AiSettings {
   provider: AiProvider;
   providers: Record<AiProvider, AiProviderConfig>;
   autoGenerate: boolean;
-  summaryLength: 'short' | 'medium' | 'long';
+  summaryLength: 'short' | 'medium';
 }
