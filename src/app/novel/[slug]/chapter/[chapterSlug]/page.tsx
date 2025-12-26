@@ -60,7 +60,7 @@ export default function ChapterPage() {
       return;
     }
 
-    const { provider, providers, summaryLength } = aiSettings;
+    const { provider, providers, summaryLength, autoGenerate } = aiSettings;
     const { apiKey, model } = providers[provider];
 
     if (!apiKey) {
@@ -97,10 +97,14 @@ export default function ChapterPage() {
       });
     } catch (err) {
       setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary');
+      // Disable auto-generate on error to avoid repeated failures
+      if (autoGenerate) {
+        setAiSettings({ ...aiSettings, autoGenerate: false });
+      }
     } finally {
       setIsGeneratingSummary(false);
     }
-  }, [chapter, aiSettings, slug]);
+  }, [chapter, aiSettings, slug, setAiSettings]);
 
   // Auto-generate summary when chapter loads if enabled and no summary exists
   // Add 1s delay to avoid triggering for users quickly navigating through chapters
