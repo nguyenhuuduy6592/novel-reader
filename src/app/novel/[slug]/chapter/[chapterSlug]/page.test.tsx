@@ -243,7 +243,6 @@ describe('ChapterPage', () => {
     })
 
     it('does not show prev button when at first chapter', async () => {
-      const user = userEvent.setup()
       ;(getChapter as jest.Mock).mockClear().mockResolvedValue(mockChapters[0])
 
       render(<ChapterPage />)
@@ -257,8 +256,6 @@ describe('ChapterPage', () => {
     })
 
     it('does not show next button when at last chapter', async () => {
-      const user = userEvent.setup()
-
       ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
         slug: 'test-novel',
         chapterSlug: 'chuong-3',

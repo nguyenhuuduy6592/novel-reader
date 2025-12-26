@@ -138,7 +138,7 @@ export default function ChapterPage() {
       } else {
         setError('Chapter not found');
       }
-    } catch (err) {
+    } catch {
       if (loadingRef.current === requestId) {
         setError('Failed to load chapter');
       }
@@ -348,7 +348,7 @@ export default function ChapterPage() {
 
   // Handle browser back/forward button
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       // Extract chapter slug from URL since useParams doesn't update with pushState
       const pathParts = window.location.pathname.split('/');
       const newChapterSlug = pathParts[pathParts.length - 1];
