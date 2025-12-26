@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { getNovel, getCurrentChapter } from '@/lib/indexedDB';
 import { Novel } from '@/types';
@@ -17,6 +17,7 @@ export default function NovelPage() {
   const [currentChapterName, setCurrentChapterName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadNovel = async () => {
@@ -32,6 +33,18 @@ export default function NovelPage() {
     };
     loadNovel();
   }, [slug]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (!novel) {
     return (
@@ -106,6 +119,7 @@ export default function NovelPage() {
           <div className="mt-4">
             <div className="mb-3">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search chapters..."
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
