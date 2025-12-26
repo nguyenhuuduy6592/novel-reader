@@ -1,9 +1,10 @@
-import { AI_SUMMARY_PROMPT } from '@/constants/ai';
+import { AI_SUMMARY_PROMPT, SummaryLength } from '@/constants/ai';
 
 export interface GenerateSummaryOptions {
   content: string;
   apiKey: string;
   model: string;
+  length?: SummaryLength;
 }
 
 export interface GenerateSummaryError {
@@ -16,8 +17,9 @@ export async function generateSummary({
   content,
   apiKey,
   model,
+  length = 'medium',
 }: GenerateSummaryOptions): Promise<string> {
-  const prompt = AI_SUMMARY_PROMPT(content);
+  const prompt = AI_SUMMARY_PROMPT(content, length);
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',

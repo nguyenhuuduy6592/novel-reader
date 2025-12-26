@@ -19,7 +19,7 @@ import {
   LINE_HEIGHT_OPTIONS,
   PADDING_OPTIONS,
 } from '@/constants/theme';
-import { AI_MODEL_OPTIONS, DEFAULT_AI_MODEL } from '@/constants/ai';
+import { AI_MODEL_OPTIONS, DEFAULT_AI_MODEL, AI_SUMMARY_LENGTH_OPTIONS, DEFAULT_AI_SUMMARY_LENGTH, type SummaryLength } from '@/constants/ai';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -44,6 +44,7 @@ export default function ChapterPage() {
   const [aiApiKey, setAiApiKey] = useState('');
   const [aiModel, setAiModel] = useState<string>(DEFAULT_AI_MODEL);
   const [aiAutoGenerate, setAiAutoGenerate] = useState(false);
+  const [aiSummaryLength, setAiSummaryLength] = useState<SummaryLength>(DEFAULT_AI_SUMMARY_LENGTH);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -161,6 +162,7 @@ export default function ChapterPage() {
         content: chapter.chapter.content,
         apiKey: aiApiKey,
         model: aiModel,
+        length: aiSummaryLength,
       });
 
       // Save to IndexedDB
@@ -176,7 +178,7 @@ export default function ChapterPage() {
     } finally {
       setIsGeneratingSummary(false);
     }
-  }, [chapter, aiApiKey, aiModel, slug, chapterSlug]);
+  }, [chapter, aiApiKey, aiModel, aiSummaryLength, slug, chapterSlug]);
 
   // Auto-generate summary when chapter loads if enabled and no summary exists
   // Add 1s delay to avoid triggering for users quickly navigating through chapters
@@ -226,6 +228,7 @@ export default function ChapterPage() {
         setAiApiKey(parsed.apiKey || '');
         setAiModel(parsed.model || DEFAULT_AI_MODEL);
         setAiAutoGenerate(parsed.autoGenerate ?? false);
+        setAiSummaryLength(parsed.summaryLength || DEFAULT_AI_SUMMARY_LENGTH);
       } catch {
         // Invalid JSON, use defaults
       }
@@ -259,8 +262,9 @@ export default function ChapterPage() {
       apiKey: aiApiKey,
       model: aiModel,
       autoGenerate: aiAutoGenerate,
+      summaryLength: aiSummaryLength,
     }));
-  }, [aiApiKey, aiModel, aiAutoGenerate]);
+  }, [aiApiKey, aiModel, aiAutoGenerate, aiSummaryLength]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -402,7 +406,7 @@ export default function ChapterPage() {
             </div>
 
             <h4 className="font-bold mb-2 text-md mt-4">AI Summary Settings</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
                 <label className="block mb-1 font-medium">OpenRouter API Key</label>
                 <input
@@ -418,6 +422,12 @@ export default function ChapterPage() {
                 value={aiModel}
                 onChange={(v) => setAiModel(v)}
                 options={AI_MODEL_OPTIONS}
+              />
+              <ThemeSelect
+                label="Summary Length"
+                value={aiSummaryLength}
+                onChange={(v) => setAiSummaryLength(v as SummaryLength)}
+                options={AI_SUMMARY_LENGTH_OPTIONS}
               />
               <div className="flex items-end">
                 <label className="flex items-center gap-2 cursor-pointer p-2">
