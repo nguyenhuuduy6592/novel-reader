@@ -9,8 +9,8 @@
       "Bash(timeout /t*)",
       "Bash(npm run build)",
       "Bash(npm run lint)",
-      "Bash(npm test)",
-      "Bash(ls -la*)"
+      "Bash(ls -la*)",
+      "Bash(npm run test*)"
     ]
   }
 }
