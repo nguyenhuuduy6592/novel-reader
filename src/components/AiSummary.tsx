@@ -13,8 +13,9 @@ interface AiSummaryProps {
 }
 
 export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate }: AiSummaryProps) {
-  // Hide completely if no AI settings or API key is set
-  if (!aiSettings || !aiSettings.providers[aiSettings.provider]?.apiKey) {
+  // Hide completely if no AI settings, no API key is set, AND no summary exists
+  // If a summary already exists, show it even without API key
+  if (!aiSettings || (!aiSettings.providers[aiSettings.provider]?.apiKey && !summary)) {
     return null;
   }
 
