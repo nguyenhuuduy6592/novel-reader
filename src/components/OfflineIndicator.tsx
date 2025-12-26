@@ -24,7 +24,7 @@ export default function OfflineIndicator() {
 
   return (
     <div className="bg-yellow-100 border-b border-yellow-300 text-yellow-800 px-4 py-2 text-sm text-center">
-      <span className="font-medium">You're offline</span>
+      <span className="font-medium">You&apos;re offline</span>
       {' '}— Reading from cached content
     </div>
   )
