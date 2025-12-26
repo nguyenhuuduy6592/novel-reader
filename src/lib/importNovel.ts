@@ -10,7 +10,6 @@ export async function importNovelFromJson(jsonString: string): Promise<{ success
       ? novel.book.coverUrl
       : `https://static.truyenchucv.org${novel.book.coverUrl}`;
 
-    console.log('Importing novel:', novel);
     await saveNovel(novel);
     return { success: true };
   } catch (error) {
