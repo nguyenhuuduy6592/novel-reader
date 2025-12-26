@@ -20,7 +20,7 @@ export const AI_SUMMARY_LENGTH_OPTIONS = [
   { value: 'long', label: 'Long (Detailed)' },
 ] as const;
 
-export const DEFAULT_AI_SUMMARY_LENGTH: SummaryLength = 'medium';
+export const DEFAULT_AI_SUMMARY_LENGTH: SummaryLength = 'short';
 
 const SHORT_PROMPT = (content: string) =>
   `Bạn là một trợ lý hữu ích. Hãy tóm tắt ngắn gọn nội dung chương truyện này trong 2-3 câu.
