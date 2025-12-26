@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getChapter, saveCurrentChapter, listChapters, saveChapterSummary } from '@/lib/indexedDB';
-import { generateSummary as generateSummaryFromApi } from '@/lib/openrouter';
-import { ChapterInfo, ReadingThemeConfig } from '@/types';
+import { generateSummary as generateSummaryFromApi } from '@/lib/aiSummary';
+import { ChapterInfo, ReadingThemeConfig, AiSettings, AiProviderConfig } from '@/types';
+import { type AiProvider } from '@/constants/ai';
 import { HomeIcon, ChevronLeftIcon, ChevronRightIcon, ThemeIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
@@ -19,17 +20,15 @@ import {
   LINE_HEIGHT_OPTIONS,
   PADDING_OPTIONS,
 } from '@/constants/theme';
+import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
 import {
-  AI_MODEL_OPTIONS,
-  DEFAULT_AI_MODEL,
+  AI_PROVIDERS,
   AI_SUMMARY_LENGTH_OPTIONS,
   DEFAULT_AI_SUMMARY_LENGTH,
   AI_PROVIDER_OPTIONS,
   DEFAULT_AI_PROVIDER,
-  GOOGLE_AI_MODEL_OPTIONS,
-  DEFAULT_GOOGLE_AI_MODEL,
-  type SummaryLength,
-  type AiProvider
+  DEFAULT_AI_SETTINGS,
+  type SummaryLength
 } from '@/constants/ai';
 
 export default function ChapterPage() {
@@ -54,58 +53,67 @@ export default function ChapterPage() {
   const currentChapterSlugRef = useRef<string>(chapterSlug);
 
   // Initialize AI settings from localStorage immediately (synchronously on first render)
-  const getInitialAiSettings = () => {
+  const getInitialAiSettings = (): AiSettings => {
     if (typeof window === 'undefined') {
-      return {
-        apiKey: '',
-        googleApiKey: '',
-        provider: DEFAULT_AI_PROVIDER,
-        model: DEFAULT_AI_MODEL,
-        googleModel: DEFAULT_GOOGLE_AI_MODEL,
-        autoGenerate: false,
-        summaryLength: DEFAULT_AI_SUMMARY_LENGTH
-      };
+      return DEFAULT_AI_SETTINGS;
     }
-    const aiSettings = localStorage.getItem('aiSettings');
-    if (aiSettings) {
-      try {
-        const parsed = JSON.parse(aiSettings);
-        return {
-          apiKey: parsed.apiKey || '',
-          googleApiKey: parsed.googleApiKey || '',
-          provider: parsed.provider || DEFAULT_AI_PROVIDER,
-          model: parsed.model || DEFAULT_AI_MODEL,
-          googleModel: parsed.googleModel || DEFAULT_GOOGLE_AI_MODEL,
-          autoGenerate: parsed.autoGenerate ?? false,
-          summaryLength: parsed.summaryLength || DEFAULT_AI_SUMMARY_LENGTH,
+
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.AI_SETTINGS);
+    if (!saved) {
+      return DEFAULT_AI_SETTINGS;
+    }
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      // Build providers config dynamically from all registered providers
+      const providers: Record<AiProvider, AiProviderConfig> = {} as Record<AiProvider, AiProviderConfig>;
+
+      for (const provider of Object.keys(AI_PROVIDERS) as AiProvider[]) {
+        const providerDefault = AI_PROVIDERS[provider].defaultModel;
+        const savedProvider = parsed.providers?.[provider];
+
+        providers[provider] = {
+          apiKey: savedProvider?.apiKey ?? '',
+          model: savedProvider?.model ?? providerDefault,
         };
-      } catch {
-        // Invalid JSON, use defaults
       }
+
+      return {
+        provider: parsed.provider ?? DEFAULT_AI_PROVIDER,
+        providers,
+        autoGenerate: parsed.autoGenerate ?? false,
+        summaryLength: parsed.summaryLength ?? DEFAULT_AI_SUMMARY_LENGTH,
+      };
+    } catch {
+      return DEFAULT_AI_SETTINGS;
     }
-    return {
-      apiKey: '',
-      googleApiKey: '',
-      provider: DEFAULT_AI_PROVIDER,
-      model: DEFAULT_AI_MODEL,
-      googleModel: DEFAULT_GOOGLE_AI_MODEL,
-      autoGenerate: false,
-      summaryLength: DEFAULT_AI_SUMMARY_LENGTH
-    };
   };
 
   const initialAiSettings = getInitialAiSettings();
 
-  // AI settings
-  const [aiApiKey, setAiApiKey] = useState(initialAiSettings.apiKey);
-  const [aiGoogleApiKey, setAiGoogleApiKey] = useState(initialAiSettings.googleApiKey);
-  const [aiProvider, setAiProvider] = useState<AiProvider>(initialAiSettings.provider);
-  const [aiModel, setAiModel] = useState<string>(initialAiSettings.model);
-  const [aiGoogleModel, setAiGoogleModel] = useState<string>(initialAiSettings.googleModel);
-  const [aiAutoGenerate, setAiAutoGenerate] = useState(initialAiSettings.autoGenerate);
-  const [aiSummaryLength, setAiSummaryLength] = useState<SummaryLength>(initialAiSettings.summaryLength);
+  // AI settings - single state object
+  const [aiSettings, setAiSettings] = useState<AiSettings>(initialAiSettings);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // Helper to update a specific provider's config
+  const updateProviderConfig = useCallback(<K extends keyof AiSettings['providers'][AiProvider]>(
+    provider: AiProvider,
+    key: K,
+    value: AiSettings['providers'][AiProvider][K]
+  ) => {
+    setAiSettings(prev => ({
+      ...prev,
+      providers: {
+        ...prev.providers,
+        [provider]: {
+          ...prev.providers[provider],
+          [key]: value,
+        },
+      },
+    }));
+  }, []);
 
   const loadChapter = useCallback(async (targetSlug: string, preFetchedChapter?: ChapterInfo | null) => {
     const requestId = `${slug}-${targetSlug}`;
@@ -213,14 +221,13 @@ export default function ChapterPage() {
       return;
     }
 
-    // Check API key based on provider
-    const apiKey = aiProvider === 'google' ? aiGoogleApiKey : aiApiKey;
+    const { provider, providers, summaryLength } = aiSettings;
+    const { apiKey, model } = providers[provider];
+
     if (!apiKey) {
-      setSummaryError(`Please set your ${aiProvider === 'google' ? 'Google AI' : 'OpenRouter'} API key in settings.`);
+      setSummaryError(`Please set your ${AI_PROVIDERS[provider].label} API key in settings.`);
       return;
     }
-
-    const model = aiProvider === 'google' ? aiGoogleModel : aiModel;
 
     setIsGeneratingSummary(true);
     setSummaryError(null);
@@ -229,9 +236,9 @@ export default function ChapterPage() {
       const summary = await generateSummaryFromApi({
         content: chapter.chapter.content,
         apiKey,
-        provider: aiProvider,
+        provider,
         model,
-        length: aiSummaryLength,
+        length: summaryLength,
       });
 
       // Save to IndexedDB
@@ -247,7 +254,7 @@ export default function ChapterPage() {
     } finally {
       setIsGeneratingSummary(false);
     }
-  }, [chapter, aiApiKey, aiGoogleApiKey, aiProvider, aiModel, aiGoogleModel, aiSummaryLength, slug]);
+  }, [chapter, aiSettings, slug]);
 
   // Auto-generate summary when chapter loads if enabled and no summary exists
   // Add 1s delay to avoid triggering for users quickly navigating through chapters
@@ -258,8 +265,8 @@ export default function ChapterPage() {
       autoGenerateTimeoutRef.current = null;
     }
 
-    if (chapter && aiAutoGenerate && !chapter.chapter.aiSummary) {
-      const apiKey = aiProvider === 'google' ? aiGoogleApiKey : aiApiKey;
+    if (chapter && aiSettings.autoGenerate && !chapter.chapter.aiSummary) {
+      const { apiKey } = aiSettings.providers[aiSettings.provider];
       if (!apiKey) return;
       autoGenerateTimeoutRef.current = setTimeout(() => {
         generateSummary();
@@ -273,7 +280,7 @@ export default function ChapterPage() {
         clearTimeout(autoGenerateTimeoutRef.current);
       }
     };
-  }, [chapter, aiAutoGenerate, aiGoogleApiKey, aiApiKey, aiProvider, generateSummary]);
+  }, [chapter, aiSettings, generateSummary]);
 
   useEffect(() => {
     currentChapterSlugRef.current = chapterSlug;
@@ -282,7 +289,7 @@ export default function ChapterPage() {
 
   // Load theme config on mount (AI settings are loaded synchronously during initialization)
   useEffect(() => {
-    const saved = localStorage.getItem('readingTheme');
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.READING_THEME);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -299,7 +306,7 @@ export default function ChapterPage() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('readingTheme', JSON.stringify(themeConfig));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.READING_THEME, JSON.stringify(themeConfig));
     document.documentElement.style.setProperty('--reading-font-size', `${themeConfig.fontSize}px`);
     document.documentElement.style.setProperty('--reading-line-height', `${themeConfig.lineHeight}`);
     document.documentElement.style.setProperty('--reading-padding', `var(--padding-${themeConfig.padding})`);
@@ -322,16 +329,8 @@ export default function ChapterPage() {
       return;
     }
 
-    localStorage.setItem('aiSettings', JSON.stringify({
-      apiKey: aiApiKey,
-      googleApiKey: aiGoogleApiKey,
-      provider: aiProvider,
-      model: aiModel,
-      googleModel: aiGoogleModel,
-      autoGenerate: aiAutoGenerate,
-      summaryLength: aiSummaryLength,
-    }));
-  }, [aiApiKey, aiGoogleApiKey, aiProvider, aiModel, aiGoogleModel, aiAutoGenerate, aiSummaryLength]);
+    localStorage.setItem(LOCAL_STORAGE_KEYS.AI_SETTINGS, JSON.stringify(aiSettings));
+  }, [aiSettings]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -477,62 +476,38 @@ export default function ChapterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <ThemeSelect
                 label="AI Provider"
-                value={aiProvider}
-                onChange={(v) => setAiProvider(v as AiProvider)}
+                value={aiSettings.provider}
+                onChange={(v) => setAiSettings(prev => ({ ...prev, provider: v as AiProvider }))}
                 options={AI_PROVIDER_OPTIONS}
               />
-              {aiProvider === 'openrouter' && (
-                <>
-                  <div>
-                    <label className="block mb-1 font-medium">OpenRouter API Key</label>
-                    <input
-                      type="password"
-                      value={aiApiKey}
-                      onChange={(e) => setAiApiKey(e.target.value)}
-                      className="w-full p-2 border rounded-md"
-                      placeholder="sk-or-..."
-                    />
-                  </div>
-                  <ThemeSelect
-                    label="AI Model"
-                    value={aiModel}
-                    onChange={(v) => setAiModel(v)}
-                    options={AI_MODEL_OPTIONS}
-                  />
-                </>
-              )}
-              {aiProvider === 'google' && (
-                <>
-                  <div>
-                    <label className="block mb-1 font-medium">Google AI API Key</label>
-                    <input
-                      type="password"
-                      value={aiGoogleApiKey}
-                      onChange={(e) => setAiGoogleApiKey(e.target.value)}
-                      className="w-full p-2 border rounded-md"
-                      placeholder="AIza..."
-                    />
-                  </div>
-                  <ThemeSelect
-                    label="AI Model"
-                    value={aiGoogleModel}
-                    onChange={(v) => setAiGoogleModel(v)}
-                    options={GOOGLE_AI_MODEL_OPTIONS}
-                  />
-                </>
-              )}
+              <div>
+                <label className="block mb-1 font-medium">{AI_PROVIDERS[aiSettings.provider].label} API Key</label>
+                <input
+                  type="password"
+                  value={aiSettings.providers[aiSettings.provider].apiKey}
+                  onChange={(e) => updateProviderConfig(aiSettings.provider, 'apiKey', e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder={AI_PROVIDERS[aiSettings.provider].placeholder}
+                />
+              </div>
+              <ThemeSelect
+                label="AI Model"
+                value={aiSettings.providers[aiSettings.provider].model}
+                onChange={(v) => updateProviderConfig(aiSettings.provider, 'model', v)}
+                options={AI_PROVIDERS[aiSettings.provider].modelOptions}
+              />
               <ThemeSelect
                 label="Summary Length"
-                value={aiSummaryLength}
-                onChange={(v) => setAiSummaryLength(v as SummaryLength)}
+                value={aiSettings.summaryLength}
+                onChange={(v) => setAiSettings(prev => ({ ...prev, summaryLength: v as SummaryLength }))}
                 options={AI_SUMMARY_LENGTH_OPTIONS}
               />
               <div className="flex items-end">
                 <label className="flex items-center gap-2 cursor-pointer p-2">
                   <input
                     type="checkbox"
-                    checked={aiAutoGenerate}
-                    onChange={(e) => setAiAutoGenerate(e.target.checked)}
+                    checked={aiSettings.autoGenerate}
+                    onChange={(e) => setAiSettings(prev => ({ ...prev, autoGenerate: e.target.checked }))}
                     className="w-4 h-4"
                   />
                   <span className="font-medium">Auto-generate summary</span>
@@ -548,7 +523,7 @@ export default function ChapterPage() {
           </h1>
 
           <AiSummary
-            apiKey={aiApiKey}
+            aiSettings={aiSettings}
             summary={chapter.chapter.aiSummary ?? null}
             isGenerating={isGeneratingSummary}
             error={summaryError}

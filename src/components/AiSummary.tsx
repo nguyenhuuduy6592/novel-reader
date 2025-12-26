@@ -1,20 +1,20 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import type { AiSettings } from '@/types';
+import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
 
 interface AiSummaryProps {
-  apiKey: string;
+  aiSettings: AiSettings | null;
   summary: string | null | undefined;
   isGenerating: boolean;
   error: string | null;
   onGenerate: () => void;
 }
 
-const STORAGE_KEY = 'ai-summary-collapsed';
-
-export function AiSummary({ apiKey, summary, isGenerating, error, onGenerate }: AiSummaryProps) {
-  // Hide completely if no API key is set
-  if (!apiKey) {
+export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate }: AiSummaryProps) {
+  // Hide completely if no AI settings or API key is set
+  if (!aiSettings || !aiSettings.providers[aiSettings.provider]?.apiKey) {
     return null;
   }
 
@@ -24,7 +24,7 @@ export function AiSummary({ apiKey, summary, isGenerating, error, onGenerate }: 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const savedState = localStorage.getItem(STORAGE_KEY);
+    const savedState = localStorage.getItem(LOCAL_STORAGE_KEYS.AI_SUMMARY_COLLAPSED);
     if (savedState === 'true' && detailsRef.current) {
       detailsRef.current.open = false;
     } else if (savedState === 'false' && detailsRef.current) {
@@ -35,7 +35,7 @@ export function AiSummary({ apiKey, summary, isGenerating, error, onGenerate }: 
   // Save collapsed state on toggle
   const handleToggle = () => {
     if (detailsRef.current) {
-      localStorage.setItem(STORAGE_KEY, detailsRef.current.open ? 'false' : 'true');
+      localStorage.setItem(LOCAL_STORAGE_KEYS.AI_SUMMARY_COLLAPSED, detailsRef.current.open ? 'false' : 'true');
     }
   };
 

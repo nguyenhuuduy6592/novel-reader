@@ -1,3 +1,5 @@
+import type { AiProvider } from '@/constants/ai';
+
 export interface GenericResponse<T> {
   pageProps: T;
 }
@@ -44,4 +46,16 @@ export interface ReadingThemeConfig {
 export interface CurrentChapter {
   novelSlug: string;
   chapterSlug: string;
+}
+
+export interface AiProviderConfig {
+  apiKey: string;
+  model: string;
+}
+
+export interface AiSettings {
+  provider: AiProvider;
+  providers: Record<AiProvider, AiProviderConfig>;
+  autoGenerate: boolean;
+  summaryLength: 'short' | 'medium' | 'long';
 }
