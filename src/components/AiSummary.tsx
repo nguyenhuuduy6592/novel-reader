@@ -57,14 +57,14 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
         ref={detailsRef}
         className="mb-4 group"
         onToggle={handleToggle}
-        open={false}
+        open
       >
         <summary className="cursor-pointer p-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-between transition-colors">
           <span className="font-semibold text-red-700">AI Summary Error</span>
           <span className="text-red-500 group-open:rotate-180 transition-transform">▼</span>
         </summary>
         <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-b-lg">
-          <p className="text-red-600 text-sm">{error}</p>
+          <p className="text-red-600 text-sm whitespace-pre-line">{error}</p>
           <button
             onClick={onGenerate}
             className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 cursor-pointer"
