@@ -180,41 +180,46 @@ export async function listChapters(novelSlug: string): Promise<ChapterInfo[]> {
   }).finally(() => db.close());
 }
 
-interface CurrentChapter {
+export interface CurrentChapter {
   novelSlug: string;
   chapterSlug: string;
+  chapterName?: string;
 }
 
-export async function saveCurrentChapter(novelSlug: string, chapterSlug: string): Promise<void> {
+export async function saveCurrentChapter(
+  novelSlug: string,
+  chapterSlug: string,
+  chapterName?: string
+): Promise<void> {
   if (typeof window === 'undefined') return;
 
   const db = await openDB();
   const tx = db.transaction(['currentChapters'], 'readwrite');
   const store = tx.objectStore('currentChapters');
-  
-  const currentChapter: CurrentChapter = { novelSlug, chapterSlug };
-  
+
+  const currentChapter: CurrentChapter = { novelSlug, chapterSlug, chapterName };
+
   await new Promise<void>((resolve, reject) => {
     const request = store.put(currentChapter);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
-  
+
   db.close();
 }
 
-export async function getCurrentChapter(novelSlug: string): Promise<string | null> {
+export async function getCurrentChapter(novelSlug: string): Promise<CurrentChapter | null> {
   if (typeof window === 'undefined') return null;
 
   const db = await openDB();
   const tx = db.transaction(['currentChapters'], 'readonly');
   const store = tx.objectStore('currentChapters');
-  
-  return new Promise<string | null>((resolve, reject) => {
+
+  return new Promise<CurrentChapter | null>((resolve, reject) => {
     const request = store.get(novelSlug);
     request.onsuccess = () => {
       const result = request.result as CurrentChapter | undefined;
-      resolve(result ? result.chapterSlug : null);
+      resolve(result || null);
     };
     request.onerror = () => reject(request.error);
   }).finally(() => db.close());

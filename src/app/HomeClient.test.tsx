@@ -12,7 +12,6 @@ import { Novel } from '@/types';
 jest.mock('@/lib/indexedDB', () => ({
   getAllNovels: jest.fn(),
   getCurrentChapter: jest.fn(),
-  listChapters: jest.fn(),
 }));
 
 // Mock the Next.js Image component
@@ -27,7 +26,7 @@ jest.mock('next/link', () => ({
   default: ({ children, href, ...props }: any) => <a href={href} {...props}>{children}</a>,
 }));
 
-const { getAllNovels, getCurrentChapter, listChapters } = require('@/lib/indexedDB');
+const { getAllNovels, getCurrentChapter } = require('@/lib/indexedDB');
 
 const mockNovels: Novel[] = [
   {
@@ -103,10 +102,6 @@ describe('HomeClient', () => {
     it('displays list of imported novels', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -119,10 +114,6 @@ describe('HomeClient', () => {
     it('displays novel author', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -135,10 +126,6 @@ describe('HomeClient', () => {
     it('displays chapter count', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -151,10 +138,6 @@ describe('HomeClient', () => {
     it('displays cover image', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -169,10 +152,6 @@ describe('HomeClient', () => {
     it('shows "Read Novel" button when no current chapter', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -186,12 +165,8 @@ describe('HomeClient', () => {
     it('shows "Continue Reading" button when there is a current chapter', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock)
-        .mockResolvedValueOnce('chap-2')  // First novel has current chapter
+        .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
         .mockResolvedValueOnce(null);       // Second novel doesn't
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -205,11 +180,9 @@ describe('HomeClient', () => {
 
     it('displays current chapter name when available', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
-      (getCurrentChapter as jest.Mock).mockResolvedValue('chap-2');
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
+      (getCurrentChapter as jest.Mock)
+        .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
+        .mockResolvedValueOnce(null);  // Second novel doesn't
 
       render(<HomeClient version="1.0.0" />);
 
@@ -221,10 +194,6 @@ describe('HomeClient', () => {
     it('links to novel detail page when clicking novel name/cover', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -236,16 +205,14 @@ describe('HomeClient', () => {
 
     it('links to current chapter when continuing reading', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
-      (getCurrentChapter as jest.Mock).mockResolvedValue('chap-2');
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
+      (getCurrentChapter as jest.Mock)
+        .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
+        .mockResolvedValueOnce(null);  // Second novel doesn't
 
       render(<HomeClient version="1.0.0" />);
 
       await waitFor(() => {
-        // Just verify the continue buttons are rendered (both novels have current chapter in this test)
+        // Just verify the continue buttons are rendered
         const continueButtons = screen.getAllByText('Continue Reading');
         expect(continueButtons.length).toBeGreaterThan(0);
       });
@@ -254,10 +221,6 @@ describe('HomeClient', () => {
     it('links to first chapter when starting new novel', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -272,7 +235,6 @@ describe('HomeClient', () => {
   describe('Navigation', () => {
     it('has link to import page', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue([]);
-      (listChapters as jest.Mock).mockResolvedValue([]);
 
       render(<HomeClient version="1.0.0" />);
 
@@ -287,10 +249,6 @@ describe('HomeClient', () => {
     it('loads novels on mount', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -303,10 +261,6 @@ describe('HomeClient', () => {
     it('loads current chapter for each novel', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -323,10 +277,6 @@ describe('HomeClient', () => {
     it('uses grid layout for novels', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       const { container } = render(<HomeClient version="1.0.0" />);
 
@@ -342,10 +292,6 @@ describe('HomeClient', () => {
     it('applies green button for new novels', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
 
       render(<HomeClient version="1.0.0" />);
 
@@ -357,16 +303,14 @@ describe('HomeClient', () => {
 
     it('applies blue button for continuing novels', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
-      (getCurrentChapter as jest.Mock).mockResolvedValue('chap-2');
-      (listChapters as jest.Mock).mockImplementation((slug: string) => {
-        const novel = mockNovels.find(n => n.book.slug === slug);
-        return Promise.resolve(novel?.chapters || []);
-      });
+      (getCurrentChapter as jest.Mock)
+        .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
+        .mockResolvedValueOnce(null);  // Second novel doesn't
 
       render(<HomeClient version="1.0.0" />);
 
       await waitFor(() => {
-        // Just verify the continue buttons are rendered (both novels have current chapter)
+        // Just verify the continue buttons are rendered
         const continueButtons = screen.getAllByText('Continue Reading');
         expect(continueButtons.length).toBeGreaterThan(0);
       });

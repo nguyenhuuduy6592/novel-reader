@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel } from '@/lib/indexedDB';
+import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, CurrentChapter } from '@/lib/indexedDB';
 import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
 import { HomeIcon, TrashIcon, DownloadIcon } from '@/lib/icons';
@@ -17,8 +17,7 @@ export default function NovelPage() {
   const slug = params.slug as string;
   const [novel, setNovel] = useState<Novel | null>(null);
   const [chapters, setChapters] = useState<ChapterInfo[]>([]);
-  const [currentChapterSlug, setCurrentChapterSlug] = useState<string | null>(null);
-  const [currentChapterName, setCurrentChapterName] = useState<string | null>(null);
+  const [currentChapter, setCurrentChapter] = useState<CurrentChapter | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -31,12 +30,8 @@ export default function NovelPage() {
       setNovel(n);
       const chaptersList = await listChapters(slug);
       setChapters(chaptersList);
-      const currentSlug = await getCurrentChapter(slug);
-      const currentChapterName = currentSlug ?
-        chaptersList?.find(c => c.chapter.slug === currentSlug)?.chapter.name || null
-        : null;
-      setCurrentChapterSlug(currentSlug);
-      setCurrentChapterName(currentChapterName);
+      const currentChapter = await getCurrentChapter(slug);
+      setCurrentChapter(currentChapter);
       setIsLoading(false);
     };
     loadNovel();
@@ -177,22 +172,22 @@ export default function NovelPage() {
               <p className="text-lg text-gray-500 mb-2">
                 {novel.book.chapterCount} chapters
               </p>
-              {currentChapterSlug && (
-                <p className="text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium break-words" title={currentChapterName || ''}>
-                  📖 Current: {currentChapterName || ''}
+              {currentChapter?.chapterSlug && (
+                <p className="text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium break-words" title={currentChapter.chapterName || ''}>
+                  📖 Current: {currentChapter.chapterName || currentChapter?.chapterSlug ||''}
                 </p>
               )}
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
+                href={currentChapter?.chapterSlug ? `/novel/${slug}/chapter/${currentChapter.chapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
                 className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-lg transition-colors w-full sm:w-fit ${
-                  currentChapterSlug
+                  currentChapter?.chapterSlug
                     ? 'bg-blue-500 hover:bg-blue-600'
                     : 'bg-green-500 hover:bg-green-600'
                 }`}
               >
-                {currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
+                {currentChapter?.chapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
               </Link>
             </div>
           </div>

@@ -77,7 +77,7 @@ describe('NovelPage', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
-    ;(getCurrentChapter as jest.Mock).mockResolvedValue('chap-1')
+    ;(getCurrentChapter as jest.Mock).mockResolvedValue({ novelSlug: 'test-novel', chapterSlug: 'chap-1', chapterName: 'Chapter 1' })
     ;(listChapters as jest.Mock).mockResolvedValue(mockChapters)
     ;(removeNovel as jest.Mock).mockResolvedValue(undefined)
     ;(exportNovel as jest.Mock).mockResolvedValue({

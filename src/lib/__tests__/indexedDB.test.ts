@@ -195,11 +195,10 @@ describe('indexedDB', () => {
   });
 
   describe('saveCurrentChapter and getCurrentChapter', () => {
-    it('saves and retrieves current chapter', async () => {
-      await saveCurrentChapter('test-novel', 'chap-1');
-
+    it('returns current chapter info with name', async () => {
+      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
       const current = await getCurrentChapter('test-novel');
-      expect(current).toBe('chap-1');
+      expect(current).toEqual({ novelSlug: 'test-novel', chapterSlug: 'chap-1', chapterName: 'Chapter 1' });
     });
 
     it('returns null when no current chapter is set', async () => {
@@ -208,14 +207,19 @@ describe('indexedDB', () => {
     });
 
     it('updates current chapter when saving again', async () => {
-      await saveCurrentChapter('test-novel', 'chap-1');
-      await saveCurrentChapter('test-novel', 'chap-2');
+      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
+      await saveCurrentChapter('test-novel', 'chap-2', 'Chapter 2');
 
       const current = await getCurrentChapter('test-novel');
-      expect(current).toBe('chap-2');
+      expect(current).toEqual({ novelSlug: 'test-novel', chapterSlug: 'chap-2', chapterName: 'Chapter 2' });
+    });
+
+    it('returns slug as name when name not stored', async () => {
+      await saveCurrentChapter('test-novel', 'chap-1');
+      const current = await getCurrentChapter('test-novel');
+      expect(current).toEqual({ novelSlug: 'test-novel', chapterSlug: 'chap-1', chapterName: undefined });
     });
   });
-
   describe('saveChapterSummary', () => {
     it('saves AI summary to existing chapter', async () => {
       await saveNovel(mockNovel);

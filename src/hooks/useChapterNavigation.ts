@@ -27,7 +27,7 @@ export function useChapterNavigation({ slug, chapterSlug, onChapterChange }: Use
       if (ch) {
         onChapterChange?.(ch);
         currentChapterSlugRef.current = targetSlug;
-        await saveCurrentChapter(slug, targetSlug);
+        await saveCurrentChapter(slug, targetSlug, ch.chapter.name);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         onChapterChange?.(null);
