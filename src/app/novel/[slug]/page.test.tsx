@@ -48,6 +48,30 @@ jest.mock('@/components/PageLayout', () => {
   }
 })
 
+// Mock useAiSettings hook
+jest.mock('@/hooks/useAiSettings', () => ({
+  useAiSettings: () => ({
+    aiSettings: {
+      provider: 'openrouter',
+      providers: {
+        openrouter: { apiKey: 'test-api-key', model: 'test-model' },
+      },
+      summaryLength: 'short',
+      autoGenerate: false,
+    },
+  }),
+}))
+
+// Mock icons
+jest.mock('@/lib/icons', () => ({
+  HomeIcon: () => <span data-testid="home-icon">Home</span>,
+  TrashIcon: () => <span>Trash</span>,
+  DownloadIcon: () => <span>Download</span>,
+  SparklesIcon: () => <span>✨</span>,
+  RefreshIcon: () => <span>Refresh</span>,
+  CheckIcon: () => <span>Check</span>,
+}))
+
 import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, unmarkNovelCompleted } from '@/lib/indexedDB'
 
 describe('NovelPage', () => {
@@ -283,6 +307,125 @@ describe('NovelPage', () => {
         // After unmarking, getNovel is called again and the component re-renders
         expect(getNovel).toHaveBeenCalledTimes(2)
       })
+    })
+  })
+
+  describe('Batch Size Dropdown - Generate Summaries', () => {
+    beforeEach(() => {
+      // Mock AI settings with API key
+      ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
+      ;(listChapters as jest.Mock).mockResolvedValue(mockChapters)
+    })
+
+    it('shows generate summaries button with default batch size of 10', async () => {
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(10\)/)).toBeInTheDocument()
+      })
+    })
+
+    it('opens dropdown menu when generate summaries button is clicked', async () => {
+      const user = userEvent.setup()
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(10\)/)).toBeInTheDocument()
+      })
+
+      const button = screen.getByText(/Generate Summaries \(10\)/).closest('summary')
+      await user.click(button!)
+
+      await waitFor(() => {
+        expect(screen.getByText('Select batch size:')).toBeInTheDocument()
+        expect(screen.getByText('10 chapters')).toBeInTheDocument()
+        expect(screen.getByText('100 chapters')).toBeInTheDocument()
+        expect(screen.getByText('1,000 chapters')).toBeInTheDocument()
+        expect(screen.getByText('All chapters')).toBeInTheDocument()
+        expect(screen.getByText('Generate')).toBeInTheDocument()
+      })
+    })
+
+    it('updates button label when batch size is changed to 100', async () => {
+      const user = userEvent.setup()
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(10\)/)).toBeInTheDocument()
+      })
+
+      // Open dropdown
+      const button = screen.getByText(/Generate Summaries \(10\)/).closest('summary')
+      await user.click(button!)
+
+      // Click 100 chapters option
+      await user.click(screen.getByText('100 chapters'))
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(100\)/)).toBeInTheDocument()
+      })
+    })
+
+    it('updates button label when batch size is changed to 1000', async () => {
+      const user = userEvent.setup()
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(10\)/)).toBeInTheDocument()
+      })
+
+      const button = screen.getByText(/Generate Summaries \(10\)/).closest('summary')
+      await user.click(button!)
+
+      await user.click(screen.getByText('1,000 chapters'))
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(1000\)/)).toBeInTheDocument()
+      })
+    })
+
+    it('updates button label when batch size is changed to All', async () => {
+      const user = userEvent.setup()
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(10\)/)).toBeInTheDocument()
+      })
+
+      const button = screen.getByText(/Generate Summaries \(10\)/).closest('summary')
+      await user.click(button!)
+
+      await user.click(screen.getByText('All chapters'))
+
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Summaries \(All\)/)).toBeInTheDocument()
+      })
+    })
+
+    it('does not show generate summaries button when no API key is set', async () => {
+      // Override the mock to return no API key
+      jest.doMock('@/hooks/useAiSettings', () => ({
+        useAiSettings: () => ({
+          aiSettings: {
+            provider: 'openrouter',
+            providers: {
+              openrouter: { apiKey: '', model: 'test-model' },
+            },
+            summaryLength: 'short',
+            autoGenerate: false,
+          },
+        }),
+      }))
+
+      // Re-render with new mock
+      const { rerender } = render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Generate Summaries/)).not.toBeInTheDocument()
+      })
+
+      // Restore original mock
+      jest.dontMock('@/hooks/useAiSettings')
     })
   })
 })
