@@ -20,7 +20,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock NavButton to simplify testing
 jest.mock('@/components/NavButton', () => ({
-  NavButton: ({ label, onClick, children }: any) => (
+  NavButton: ({ label, onClick, children }: { label?: string; onClick?: () => void; children?: React.ReactNode }) => (
     <button onClick={onClick} data-testid={`nav-button-${label}`}>
       {children}
     </button>
@@ -29,7 +29,7 @@ jest.mock('@/components/NavButton', () => ({
 
 // Mock ConfirmDialog
 jest.mock('@/components/ConfirmDialog', () => ({
-  ConfirmDialog: ({ isOpen, onConfirm }: any) => {
+  ConfirmDialog: ({ isOpen, onConfirm }: { isOpen?: boolean; onConfirm?: () => void }) => {
     if (!isOpen) return null
     return (
       <div data-testid="confirm-dialog">

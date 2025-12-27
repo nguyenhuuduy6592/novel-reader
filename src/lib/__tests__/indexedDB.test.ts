@@ -1,6 +1,6 @@
 // Polyfill structuredClone for fake-indexeddb
 if (!global.structuredClone) {
-  global.structuredClone = (val: any) => JSON.parse(JSON.stringify(val));
+  global.structuredClone = (val: unknown) => JSON.parse(JSON.stringify(val));
 }
 
 import 'fake-indexeddb/auto';

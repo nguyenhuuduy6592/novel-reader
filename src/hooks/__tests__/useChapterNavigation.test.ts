@@ -16,8 +16,8 @@ const originalLocation = window.location
 
 global.scrollTo = mockScrollTo
 global.window.history.pushState = mockPushState
-global.window.addEventListener = mockAddEventListener as any
-global.window.removeEventListener = mockRemoveEventListener as any
+global.window.addEventListener = mockAddEventListener as typeof window.addEventListener
+global.window.removeEventListener = mockRemoveEventListener as typeof window.removeEventListener
 
 describe('useChapterNavigation', () => {
   const mockSlug = 'test-novel'
@@ -428,9 +428,9 @@ describe('useChapterNavigation', () => {
 
       // Get the popstate handler
       let popstateHandler: (() => void) | undefined
-      mockAddEventListener.mockImplementation((event: string, handler: any) => {
+      mockAddEventListener.mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
         if (event === 'popstate') {
-          popstateHandler = handler
+          popstateHandler = handler as (() => void)
         }
       })
 
