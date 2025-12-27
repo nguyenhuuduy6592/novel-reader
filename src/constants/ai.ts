@@ -148,6 +148,9 @@ async function generateWithZai({ content, apiKey, model, length = 'medium' }: Ge
     body: JSON.stringify({
       model,
       messages: [{ role: 'user', content: prompt }],
+      thinking: {
+        type: "enabled"
+      }
     }),
   });
 
