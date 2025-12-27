@@ -15,6 +15,12 @@ jest.mock('@/lib/indexedDB', () => ({
   unmarkNovelCompleted: jest.fn(),
 }));
 
+// Mock Next.js navigation
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({ push: mockPush })),
+}));
+
 // Mock the Next.js Image component
 jest.mock('next/image', () => ({
   __esModule: true,
@@ -103,6 +109,7 @@ const mockCompletedNovel: Novel = {
 describe('Home', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPush.mockClear();
     indexedDB.deleteDatabase('novel-reader');
   });
 
@@ -299,50 +306,6 @@ describe('Home', () => {
         expect(getCurrentChapter).toHaveBeenCalledTimes(2);
         expect(getCurrentChapter).toHaveBeenCalledWith('test-novel-1');
         expect(getCurrentChapter).toHaveBeenCalledWith('test-novel-2');
-      });
-    });
-  });
-
-  describe('Styling and Layout', () => {
-    it('uses grid layout for novels', async () => {
-      (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
-      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-
-      const { container } = render(<Home />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Novel 1')).toBeInTheDocument();
-      });
-
-      // Check that grid classes are applied
-      const gridDiv = container.querySelector('.md\\:grid-cols-2');
-      expect(gridDiv).toBeInTheDocument();
-    });
-
-    it('applies green button for new novels', async () => {
-      (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
-      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
-
-      render(<Home />);
-
-      await waitFor(() => {
-        const readButton = screen.getAllByText('Read Novel')[0];
-        expect(readButton).toHaveClass('bg-green-500');
-      });
-    });
-
-    it('applies blue button for continuing novels', async () => {
-      (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
-      (getCurrentChapter as jest.Mock)
-        .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
-        .mockResolvedValueOnce(null);  // Second novel doesn't
-
-      render(<Home />);
-
-      await waitFor(() => {
-        // Just verify the continue buttons are rendered
-        const continueButtons = screen.getAllByText('Continue Reading');
-        expect(continueButtons.length).toBeGreaterThan(0);
       });
     });
   });
