@@ -1,11 +1,11 @@
 // Polyfill structuredClone for fake-indexeddb
 if (!global.structuredClone) {
-  global.structuredClone = (val: any) => JSON.parse(JSON.stringify(val));
+  global.structuredClone = (val: unknown) => JSON.parse(JSON.stringify(val));
 }
 
 import 'fake-indexeddb/auto';
 import { render, screen, waitFor } from '@testing-library/react';
-import HomeClient from '@/app/HomeClient';
+import Home from '@/app/page';
 import { Novel } from '@/types';
 
 // Mock the indexedDB module
@@ -17,16 +17,16 @@ jest.mock('@/lib/indexedDB', () => ({
 // Mock the Next.js Image component
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: ({ alt, ...props }: any) => <img alt={alt} {...props} />,
+  default: ({ alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => <img alt={alt ?? ''} {...props} />,
 }));
 
 // Mock Link component
 jest.mock('next/link', () => ({
   __esModule: true,
-  default: ({ children, href, ...props }: any) => <a href={href} {...props}>{children}</a>,
+  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => <a href={href} {...props}>{children}</a>,
 }));
 
-const { getAllNovels, getCurrentChapter } = require('@/lib/indexedDB');
+const { getAllNovels, getCurrentChapter } = jest.requireMock('@/lib/indexedDB');
 
 const mockNovels: Novel[] = [
   {
@@ -70,7 +70,7 @@ const mockNovels: Novel[] = [
   },
 ];
 
-describe('HomeClient', () => {
+describe('Home', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     indexedDB.deleteDatabase('novel-reader');
@@ -80,7 +80,7 @@ describe('HomeClient', () => {
     it('shows empty state when no novels are imported', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue([]);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(screen.getByText('No novels imported yet.')).toBeInTheDocument();
@@ -90,10 +90,10 @@ describe('HomeClient', () => {
     it('displays version number', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue([]);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
-        expect(screen.getByText('v1.0.0')).toBeInTheDocument();
+        expect(screen.getByText(/v\d+\.\d+\.\d+/)).toBeInTheDocument();
       });
     });
   });
@@ -103,7 +103,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(screen.getByText('Test Novel 1')).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(screen.getByText('by Author One')).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(screen.getByText(/Chapter count: 10/)).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         const cover1 = screen.getByAltText('Test Novel 1');
@@ -153,7 +153,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         const readButtons = screen.getAllByText('Read Novel');
@@ -168,7 +168,7 @@ describe('HomeClient', () => {
         .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
         .mockResolvedValueOnce(null);       // Second novel doesn't
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         const continueButtons = screen.getAllByText('Continue Reading');
@@ -184,7 +184,7 @@ describe('HomeClient', () => {
         .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
         .mockResolvedValueOnce(null);  // Second novel doesn't
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(screen.getByText(/📖 Current: Chapter 2/)).toBeInTheDocument();
@@ -195,7 +195,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         // Just verify the novel name is rendered, the Link href is handled by Next.js
@@ -209,7 +209,7 @@ describe('HomeClient', () => {
         .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
         .mockResolvedValueOnce(null);  // Second novel doesn't
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         // Just verify the continue buttons are rendered
@@ -222,7 +222,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         // Just verify the read button is rendered
@@ -236,7 +236,7 @@ describe('HomeClient', () => {
     it('has link to import page', async () => {
       (getAllNovels as jest.Mock).mockResolvedValue([]);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         const importLink = screen.getByText('Import Novel');
@@ -250,7 +250,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       // getAllNovels should be called
       await waitFor(() => {
@@ -262,7 +262,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         // Should be called for each novel
@@ -278,7 +278,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      const { container } = render(<HomeClient version="1.0.0" />);
+      const { container } = render(<Home />);
 
       await waitFor(() => {
         expect(screen.getByText('Test Novel 1')).toBeInTheDocument();
@@ -293,7 +293,7 @@ describe('HomeClient', () => {
       (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
       (getCurrentChapter as jest.Mock).mockResolvedValue(null);
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         const readButton = screen.getAllByText('Read Novel')[0];
@@ -307,7 +307,7 @@ describe('HomeClient', () => {
         .mockResolvedValueOnce({ novelSlug: 'test-novel-1', chapterSlug: 'chap-2', chapterName: 'Chapter 2' })  // First novel has current chapter
         .mockResolvedValueOnce(null);  // Second novel doesn't
 
-      render(<HomeClient version="1.0.0" />);
+      render(<Home />);
 
       await waitFor(() => {
         // Just verify the continue buttons are rendered
