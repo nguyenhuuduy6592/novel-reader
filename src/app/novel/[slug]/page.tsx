@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, getChapter, saveChapterSummary, CurrentChapter } from '@/lib/indexedDB';
+import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, getChapter, saveChapterSummary, CurrentChapter, unmarkNovelCompleted } from '@/lib/indexedDB';
 import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
-import { HomeIcon, TrashIcon, DownloadIcon, SparklesIcon } from '@/lib/icons';
+import { HomeIcon, TrashIcon, DownloadIcon, SparklesIcon, RefreshIcon, CheckIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -114,6 +114,12 @@ export default function NovelPage() {
     } catch (error) {
       alert('Failed to export novel. Please try again.');
     }
+  };
+
+  const handleUnmarkCompleted = async () => {
+    await unmarkNovelCompleted(slug);
+    const n = await getNovel(slug);
+    setNovel(n);
   };
 
   // Get visible chapters for batch generation (respects search filter and 10-item limit)
@@ -355,7 +361,13 @@ export default function NovelPage() {
               <p className="text-lg text-gray-500 mb-2">
                 {novel.book.chapterCount} chapters
               </p>
-              {currentChapter?.chapterSlug && (
+              {novel.completedAt && (
+                <p className="text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium inline-flex items-center justify-center gap-1 mb-2">
+                  <CheckIcon />
+                  Completed
+                </p>
+              )}
+              {!novel.completedAt && currentChapter?.chapterSlug && (
                 <p className="text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium break-words" title={currentChapter.chapterName || ''}>
                   📖 Current: {currentChapter.chapterName || currentChapter?.chapterSlug ||''}
                 </p>
@@ -364,7 +376,7 @@ export default function NovelPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={currentChapter?.chapterSlug ? `/novel/${slug}/chapter/${currentChapter.chapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
-                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm text-white font-semibold text-lg transition-colors w-full sm:w-fit cursor-pointer ${
+                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit cursor-pointer ${
                   currentChapter?.chapterSlug
                     ? 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
                     : 'bg-green-500 hover:bg-green-600 active:bg-green-700'
@@ -372,6 +384,15 @@ export default function NovelPage() {
               >
                 {currentChapter?.chapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
               </Link>
+              {novel.completedAt && (
+                <NavButton
+                  icon={<RefreshIcon />}
+                  label="Unmark Completed"
+                  onClick={handleUnmarkCompleted}
+                  ariaLabel="Unmark as completed"
+                  className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-amber-500 hover:bg-amber-600 active:bg-amber-700 focus:bg-amber-700"
+                />
+              )}
               {aiSettings.providers[aiSettings.provider]?.apiKey && (
                 <NavButton
                   icon={<SparklesIcon />}
@@ -379,7 +400,7 @@ export default function NovelPage() {
                   onClick={generateBatchSummaries}
                   disabled={batchGeneration.isGenerating}
                   ariaLabel="Generate AI summaries for visible chapters"
-                  className="px-6 py-3 rounded-lg font-semibold w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 disabled:bg-gray-400"
+                  className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 disabled:bg-gray-400"
                 />
               )}
             </div>

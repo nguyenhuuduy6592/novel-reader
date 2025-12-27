@@ -2,16 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ImportIcon, BookOpenIcon } from '@/lib/icons';
+import { useRouter } from 'next/navigation';
+import { ImportIcon, BookOpenIcon, RefreshIcon, CheckIcon } from '@/lib/icons';
 import { Novel } from '@/types';
-import { getAllNovels, getCurrentChapter } from '@/lib/indexedDB';
+import { getAllNovels, getCurrentChapter, unmarkNovelCompleted } from '@/lib/indexedDB';
 import Image from 'next/image';
 import PageLayout from '@/components/PageLayout';
 import { CurrentChapter } from '@/lib/indexedDB';
 import packageJson from '../../package.json';
 
 export default function Home() {
+  const router = useRouter();
   const [novels, setNovels] = useState<{ novel: Novel; currentChapter: CurrentChapter | null }[]>([]);
+
+  const handleStartAgain = async (novelSlug: string) => {
+    await unmarkNovelCompleted(novelSlug);
+    router.push(`/novel/${novelSlug}`);
+  };
 
   useEffect(() => {
     const loadNovels = async () => {
@@ -64,6 +71,7 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {novels.map(({ novel, currentChapter }) => {
+                const isCompleted = !!novel.completedAt;
                 // For new novels without current chapter, link to the novel detail page
                 const chapterHref = currentChapter?.chapterSlug
                   ? `/novel/${novel.book.slug}/chapter/${currentChapter.chapterSlug}`
@@ -85,22 +93,38 @@ export default function Home() {
                     <p className="text-sm text-gray-500 mb-2">
                       Chapter count: {novel.book.chapterCount}
                     </p>
-                    {currentChapter?.chapterSlug && (
+                    {!isCompleted && currentChapter?.chapterSlug && (
                       <p className="text-xs text-green-600 mb-3 font-medium break-words" title={currentChapter.chapterName || ''}>
                         📖 Current: {currentChapter.chapterName || currentChapter?.chapterSlug || ''}
                       </p>
                     )}
-                    <Link
-                      href={chapterHref}
-                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white font-medium transition-colors w-full ${
-                        currentChapter?.chapterSlug
-                          ? 'bg-blue-500 hover:bg-blue-600'
-                          : 'bg-green-500 hover:bg-green-600'
-                      }`}
-                    >
-                      <BookOpenIcon />
-                      {currentChapter?.chapterSlug ? 'Continue Reading' : 'Read Novel'}
-                    </Link>
+                    {isCompleted ? (
+                      <>
+                        <p className="text-xs px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium mb-3 text-center flex items-center justify-center gap-1">
+                          <CheckIcon />
+                          Completed
+                        </p>
+                        <button
+                          onClick={() => handleStartAgain(novel.book.slug)}
+                          className="flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white font-medium transition-colors w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 focus:bg-amber-700 cursor-pointer"
+                        >
+                          <RefreshIcon />
+                          Start Again
+                        </button>
+                      </>
+                    ) : (
+                      <Link
+                        href={chapterHref}
+                        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white font-medium transition-colors w-full ${
+                          currentChapter?.chapterSlug
+                            ? 'bg-blue-500 hover:bg-blue-600'
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                      >
+                        <BookOpenIcon />
+                        {currentChapter?.chapterSlug ? 'Continue Reading' : 'Read Novel'}
+                      </Link>
+                    )}
                   </div>
                 );
               })}

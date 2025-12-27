@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { generateSummary as generateSummaryFromApi } from '@/lib/aiSummary';
-import { saveChapterSummary } from '@/lib/indexedDB';
+import { saveChapterSummary, markNovelCompleted, getNovel, deleteCurrentChapter } from '@/lib/indexedDB';
 import { ChapterInfo } from '@/types';
-import { HomeIcon, ChevronLeftIcon, ChevronRightIcon, ThemeIcon } from '@/lib/icons';
+import { HomeIcon, ChevronLeftIcon, ChevronRightIcon, ThemeIcon, CheckIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { SettingsPanel } from '@/components/SettingsPanel';
@@ -28,6 +28,7 @@ export default function ChapterPage() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [generationTime, setGenerationTime] = useState<number | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const autoGenerateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentChapterSlugRef = useRef<string>(chapterSlug);
@@ -37,7 +38,7 @@ export default function ChapterPage() {
   const { aiSettings, setAiSettings, updateProviderConfig } = useAiSettings();
 
   // Chapter navigation hook - wrap callback in useCallback to prevent infinite reload loop
-  const handleChapterChange = useCallback((ch: ChapterInfo | null) => {
+  const handleChapterChange = useCallback(async (ch: ChapterInfo | null) => {
     setChapter(ch);
     // Reset summary error and generation time when changing chapters
     setSummaryError(null);
@@ -49,11 +50,14 @@ export default function ChapterPage() {
       if (ch.chapter.slug) {
         currentChapterSlugRef.current = ch.chapter.slug;
       }
+      // Check completion status
+      const novel = await getNovel(slug);
+      setIsCompleted(!!novel?.completedAt);
     } else {
       setIsLoading(false);
       setError('Chapter not found');
     }
-  }, []);
+  }, [slug]);
 
   const { navigateChapter } = useChapterNavigation({
     slug,
@@ -120,6 +124,12 @@ export default function ChapterPage() {
       setIsGeneratingSummary(false);
     }
   }, [chapter, aiSettings, slug, setAiSettings]);
+
+  const handleMarkCompleted = useCallback(async () => {
+    await markNovelCompleted(slug);
+    await deleteCurrentChapter(slug);
+    setIsCompleted(true);
+  }, [slug]);
 
   // Auto-generate summary when chapter loads if enabled and no summary exists
   // Add 1s delay to avoid triggering for users quickly navigating through chapters
@@ -260,6 +270,16 @@ export default function ChapterPage() {
             icon={<ChevronLeftIcon />}
             onClick={() => navigateChapter('prev', chapter)}
             ariaLabel="Previous chapter"
+          />
+        )}
+        {!chapter.nextChapter?.slug && (
+          <NavButton
+            label={isCompleted ? 'Completed' : 'Mark as Completed'}
+            icon={<CheckIcon />}
+            onClick={handleMarkCompleted}
+            disabled={isCompleted}
+            ariaLabel={isCompleted ? 'Completed' : 'Mark as completed'}
+            className="bg-green-500 hover:bg-green-600 active:bg-green-700 focus:bg-green-700 disabled:bg-gray-400"
           />
         )}
         {chapter.nextChapter?.slug && (

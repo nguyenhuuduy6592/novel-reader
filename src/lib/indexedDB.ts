@@ -71,13 +71,16 @@ export async function saveNovel(novel: Novel): Promise<void> {
     const novelToSave = { ...novel };
     delete novelToSave.chapters;
 
-    // Preserve lastReadAt if the novel already exists
+    // Preserve lastReadAt and completedAt if the novel already exists
     const existingNovel = await promisifyRequest<Novel | undefined>(
       novelsStore.get(novel.book.slug)
     );
     if (existingNovel?.lastReadAt) {
       novelToSave.lastReadAt = existingNovel.lastReadAt;
     }
+  if (existingNovel?.completedAt) {
+    novelToSave.completedAt = existingNovel.completedAt;
+  }
 
     await promisifyRequest(novelsStore.put(novelToSave));
 
@@ -184,6 +187,22 @@ export async function getCurrentChapter(novelSlug: string): Promise<CurrentChapt
   });
 }
 
+export async function deleteCurrentChapter(novelSlug: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const db = await openDB();
+  const tx = db.transaction(['currentChapters'], 'readwrite');
+  const store = tx.objectStore('currentChapters');
+
+  await new Promise<void>((resolve, reject) => {
+    const request = store.delete(novelSlug);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+
+  db.close();
+}
+
 export async function getChapter(novelSlug: string, chapterSlug: string): Promise<ChapterInfo | null> {
   const id = `${novelSlug}-${chapterSlug}`;
   return withDB(['chapters'], 'readonly', async (tx) => {
@@ -261,4 +280,54 @@ export async function exportNovel(slug: string): Promise<Novel | null> {
     ...novel,
     chapters,
   };
+}
+
+export async function markNovelCompleted(novelSlug: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const db = await openDB();
+  const tx = db.transaction(['novels'], 'readwrite');
+  const novelsStore = tx.objectStore('novels');
+
+  const novel = await new Promise<Novel | undefined>((resolve, reject) => {
+    const request = novelsStore.get(novelSlug);
+    request.onsuccess = () => resolve(request.result as Novel | undefined);
+    request.onerror = () => reject(request.error);
+  });
+
+  if (novel) {
+    novel.completedAt = new Date().toISOString();
+    await new Promise<void>((resolve, reject) => {
+      const request = novelsStore.put(novel);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  db.close();
+}
+
+export async function unmarkNovelCompleted(novelSlug: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const db = await openDB();
+  const tx = db.transaction(['novels'], 'readwrite');
+  const novelsStore = tx.objectStore('novels');
+
+  const novel = await new Promise<Novel | undefined>((resolve, reject) => {
+    const request = novelsStore.get(novelSlug);
+    request.onsuccess = () => resolve(request.result as Novel | undefined);
+    request.onerror = () => reject(request.error);
+  });
+
+  if (novel) {
+    delete novel.completedAt;
+    await new Promise<void>((resolve, reject) => {
+      const request = novelsStore.put(novel);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  db.close();
 }
