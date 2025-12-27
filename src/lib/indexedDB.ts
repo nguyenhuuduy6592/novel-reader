@@ -188,19 +188,10 @@ export async function getCurrentChapter(novelSlug: string): Promise<CurrentChapt
 }
 
 export async function deleteCurrentChapter(novelSlug: string): Promise<void> {
-  if (typeof window === 'undefined') return;
-
-  const db = await openDB();
-  const tx = db.transaction(['currentChapters'], 'readwrite');
-  const store = tx.objectStore('currentChapters');
-
-  await new Promise<void>((resolve, reject) => {
-    const request = store.delete(novelSlug);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+  await withDB(['currentChapters'], 'readwrite', async (tx) => {
+    const store = tx.objectStore('currentChapters');
+    await promisifyRequest(store.delete(novelSlug));
   });
-
-  db.close();
 }
 
 export async function getChapter(novelSlug: string, chapterSlug: string): Promise<ChapterInfo | null> {
@@ -283,51 +274,25 @@ export async function exportNovel(slug: string): Promise<Novel | null> {
 }
 
 export async function markNovelCompleted(novelSlug: string): Promise<void> {
-  if (typeof window === 'undefined') return;
+  await withDB(['novels'], 'readwrite', async (tx) => {
+    const novelsStore = tx.objectStore('novels');
+    const novel = await promisifyRequest<Novel | undefined>(novelsStore.get(novelSlug));
 
-  const db = await openDB();
-  const tx = db.transaction(['novels'], 'readwrite');
-  const novelsStore = tx.objectStore('novels');
-
-  const novel = await new Promise<Novel | undefined>((resolve, reject) => {
-    const request = novelsStore.get(novelSlug);
-    request.onsuccess = () => resolve(request.result as Novel | undefined);
-    request.onerror = () => reject(request.error);
+    if (novel) {
+      novel.completedAt = new Date().toISOString();
+      await promisifyRequest(novelsStore.put(novel));
+    }
   });
-
-  if (novel) {
-    novel.completedAt = new Date().toISOString();
-    await new Promise<void>((resolve, reject) => {
-      const request = novelsStore.put(novel);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  db.close();
 }
 
 export async function unmarkNovelCompleted(novelSlug: string): Promise<void> {
-  if (typeof window === 'undefined') return;
+  await withDB(['novels'], 'readwrite', async (tx) => {
+    const novelsStore = tx.objectStore('novels');
+    const novel = await promisifyRequest<Novel | undefined>(novelsStore.get(novelSlug));
 
-  const db = await openDB();
-  const tx = db.transaction(['novels'], 'readwrite');
-  const novelsStore = tx.objectStore('novels');
-
-  const novel = await new Promise<Novel | undefined>((resolve, reject) => {
-    const request = novelsStore.get(novelSlug);
-    request.onsuccess = () => resolve(request.result as Novel | undefined);
-    request.onerror = () => reject(request.error);
+    if (novel) {
+      delete novel.completedAt;
+      await promisifyRequest(novelsStore.put(novel));
+    }
   });
-
-  if (novel) {
-    delete novel.completedAt;
-    await new Promise<void>((resolve, reject) => {
-      const request = novelsStore.put(novel);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  db.close();
 }

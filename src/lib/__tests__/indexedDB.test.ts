@@ -387,7 +387,7 @@ describe('indexedDB', () => {
 
     it('preserves lastReadAt when re-saving novel', async () => {
       await saveNovel(mockNovel);
-      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
+      await updateNovelLastRead('test-novel');
 
       const updatedNovel: Novel = {
         ...mockNovel,
@@ -402,7 +402,7 @@ describe('indexedDB', () => {
 
     it('preserves both completedAt and lastReadAt when re-saving', async () => {
       await saveNovel(mockNovel);
-      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
+      await updateNovelLastRead('test-novel');
       await markNovelCompleted('test-novel');
 
       const updatedNovel: Novel = {
