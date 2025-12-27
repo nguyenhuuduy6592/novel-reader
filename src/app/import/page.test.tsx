@@ -10,7 +10,9 @@ jest.mock('@/lib/importNovel');
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
-  Link: ({ children, href, ...props }: any) => <a href={href} {...props}>{children}</a>,
+  Link: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href as string} {...props}>{children}</a>
+  ),
 }));
 
 describe('ImportPage', () => {
