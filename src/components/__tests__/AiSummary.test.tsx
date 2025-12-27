@@ -50,6 +50,26 @@ describe('AiSummary', () => {
       expect(screen.queryByText('Some error')).not.toBeInTheDocument();
       expect(screen.queryByText('Existing summary')).not.toBeInTheDocument();
     });
+
+    it('hides generate button when autoGenerate is enabled', () => {
+      const autoGenerateSettings: AiSettings = {
+        ...mockAiSettings,
+        autoGenerate: true
+      };
+
+      render(
+        <AiSummary
+          aiSettings={autoGenerateSettings}
+          summary={null}
+          isGenerating={true}
+          error={null}
+          onGenerate={jest.fn()}
+        />
+      );
+
+      expect(screen.getByText('Generating AI summary...')).toBeInTheDocument();
+      expect(screen.queryByText('Generate Summary')).not.toBeInTheDocument();
+    });
   });
 
   describe('when no summary exists', () => {

@@ -72,13 +72,15 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
       {isGenerating ? (
         <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <p className="text-gray-600 mb-2">Generating AI summary...</p>
-          <button
-            onClick={onGenerate}
-            disabled
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm cursor-pointer"
-          >
-            Generate Summary
-          </button>
+          {!aiSettings.autoGenerate && (
+            <button
+              onClick={onGenerate}
+              disabled
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm cursor-pointer"
+            >
+              Generate Summary
+            </button>
+          )}
         </div>
       ) : !summary && !error ? (
         <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
