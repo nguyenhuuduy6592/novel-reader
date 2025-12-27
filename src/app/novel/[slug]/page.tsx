@@ -98,10 +98,12 @@ export default function NovelPage() {
             <p className="text-red-500">Novel not found.</p>
           )}
           <br />
-          <Link href="/" className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-            <HomeIcon />
-            Home
-          </Link>
+          <NavButton
+            icon={<HomeIcon />}
+            label="Home"
+            onClick={() => router.push('/')}
+            ariaLabel="Go to home"
+          />
         </div>
       </div>
     );
@@ -112,13 +114,12 @@ export default function NovelPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 className="hidden sm:block text-3xl font-bold">Novel Details</h1>
         <div className="flex gap-2">
-          <Link
-            href="/"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            <HomeIcon />
-            Home
-          </Link>
+          <NavButton
+            icon={<HomeIcon />}
+            label="Home"
+            onClick={() => router.push('/')}
+            ariaLabel="Go to home"
+          />
           <NavButton
             label="Export"
             icon={<DownloadIcon />}
