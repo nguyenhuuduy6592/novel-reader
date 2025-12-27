@@ -15,6 +15,7 @@ import {
   getChapter,
   saveChapterSummary,
   exportNovel,
+  updateNovelLastRead,
 } from '../indexedDB';
 import { Novel } from '@/types';
 
@@ -304,6 +305,36 @@ describe('indexedDB', () => {
 
       expect(exported?.book.slug).toBe('test-novel');
       expect(exported?.chapters).toEqual([]);
+    });
+  });
+
+  describe('updateNovelLastRead', () => {
+    it('updates the lastReadAt timestamp for a novel', async () => {
+      await saveNovel(mockNovel);
+
+      const beforeNovel = await getNovel('test-novel');
+      expect(beforeNovel?.lastReadAt).toBeUndefined();
+
+      await updateNovelLastRead('test-novel');
+
+      const afterNovel = await getNovel('test-novel');
+      expect(afterNovel?.lastReadAt).toBeDefined();
+      expect(new Date(afterNovel!.lastReadAt!).toISOString()).toBe(afterNovel!.lastReadAt);
+    });
+
+    it('does not throw when updating non-existent novel', async () => {
+      await expect(updateNovelLastRead('non-existent')).resolves.not.toThrow();
+    });
+
+    it('preserves other novel properties when updating lastReadAt', async () => {
+      await saveNovel(mockNovel);
+
+      await updateNovelLastRead('test-novel');
+
+      const novel = await getNovel('test-novel');
+      expect(novel?.book.slug).toBe('test-novel');
+      expect(novel?.book.name).toBe('Test Novel');
+      expect(novel?.lastReadAt).toBeDefined();
     });
   });
 });

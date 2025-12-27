@@ -22,13 +22,13 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('novels')) {
         db.createObjectStore('novels', { keyPath: 'book.slug' });
       }
-    
+
       // Chapters store
       if (!db.objectStoreNames.contains('chapters')) {
         const chaptersStore = db.createObjectStore('chapters', { keyPath: 'id' });
         chaptersStore.createIndex('novelSlug', 'novelSlug', { unique: false });
       }
-    
+
       // Current chapter store
       if (!db.objectStoreNames.contains('currentChapters')) {
         db.createObjectStore('currentChapters', { keyPath: 'novelSlug' });
@@ -37,158 +37,125 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveNovel(novel: Novel): Promise<void> {
-  if (typeof window === 'undefined') return;
+// Helper: promisify an IndexedDB request
+function promisifyRequest<T>(request: IDBRequest): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Helper: execute a callback with auto-close and SSR guard
+async function withDB<T>(
+  stores: string[],
+  mode: IDBTransactionMode,
+  callback: (tx: IDBTransaction) => Promise<T>
+): Promise<T> {
+  if (typeof window === 'undefined') {
+    return undefined as T;
+  }
 
   const db = await openDB();
-  const tx = db.transaction(['novels', 'chapters'], 'readwrite');
-
-  // Save novel (without chapters to save space)
-  const novelsStore = tx.objectStore('novels');
-  const novelToSave = { ...novel };
-  delete novelToSave.chapters;
-
-  // Preserve lastReadAt if the novel already exists
-  const existingNovel = await new Promise<Novel | undefined>((resolve, reject) => {
-    const request = novelsStore.get(novel.book.slug);
-    request.onsuccess = () => resolve(request.result as Novel | undefined);
-    request.onerror = () => reject(request.error);
-  });
-  if (existingNovel?.lastReadAt) {
-    novelToSave.lastReadAt = existingNovel.lastReadAt;
+  try {
+    const tx = db.transaction(stores, mode);
+    return await callback(tx);
+  } finally {
+    db.close();
   }
+}
 
-  await new Promise<void>((resolve, reject) => {
-    const request = novelsStore.put(novelToSave);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+export async function saveNovel(novel: Novel): Promise<void> {
+  await withDB(['novels', 'chapters'], 'readwrite', async (tx) => {
+    // Save novel (without chapters to save space)
+    const novelsStore = tx.objectStore('novels');
+    const novelToSave = { ...novel };
+    delete novelToSave.chapters;
 
-  // Save chapters if present
-  if (novel.chapters) {
-    const chaptersStore = tx.objectStore('chapters');
-    for (const chapterInfo of novel.chapters) {
-      const chapterId = `${novel.book.slug}-${chapterInfo.chapter.slug}`;
-
-      // Check if chapter already exists and has an AI summary
-      const existingChapter = await new Promise<StoredChapter | undefined>((resolve, reject) => {
-        const request = chaptersStore.get(chapterId);
-        request.onsuccess = () => resolve(request.result as StoredChapter | undefined);
-        request.onerror = () => reject(request.error);
-      });
-
-      // Preserve AI summary if it exists
-      const chapterToSave = existingChapter?.chapter.chapter.aiSummary
-        ? {
-            ...chapterInfo,
-            chapter: {
-              ...chapterInfo.chapter,
-              aiSummary: existingChapter.chapter.chapter.aiSummary,
-            },
-          }
-        : chapterInfo;
-
-      const storedChapter: StoredChapter = {
-        id: chapterId,
-        novelSlug: novel.book.slug,
-        chapter: chapterToSave,
-      };
-      await new Promise<void>((resolve, reject) => {
-        const request = chaptersStore.put(storedChapter);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      });
+    // Preserve lastReadAt if the novel already exists
+    const existingNovel = await promisifyRequest<Novel | undefined>(
+      novelsStore.get(novel.book.slug)
+    );
+    if (existingNovel?.lastReadAt) {
+      novelToSave.lastReadAt = existingNovel.lastReadAt;
     }
-  }
 
-  db.close();
+    await promisifyRequest(novelsStore.put(novelToSave));
+
+    // Save chapters if present
+    if (novel.chapters) {
+      const chaptersStore = tx.objectStore('chapters');
+      for (const chapterInfo of novel.chapters) {
+        const chapterId = `${novel.book.slug}-${chapterInfo.chapter.slug}`;
+
+        // Check if chapter already exists and has an AI summary
+        const existingChapter = await promisifyRequest<StoredChapter | undefined>(
+          chaptersStore.get(chapterId)
+        );
+
+        // Preserve AI summary if it exists
+        const chapterToSave = existingChapter?.chapter.chapter.aiSummary
+          ? {
+              ...chapterInfo,
+              chapter: {
+                ...chapterInfo.chapter,
+                aiSummary: existingChapter.chapter.chapter.aiSummary,
+              },
+            }
+          : chapterInfo;
+
+        const storedChapter: StoredChapter = {
+          id: chapterId,
+          novelSlug: novel.book.slug,
+          chapter: chapterToSave,
+        };
+        await promisifyRequest(chaptersStore.put(storedChapter));
+      }
+    }
+  });
 }
 
 export async function getNovel(slug: string): Promise<Novel | null> {
-  if (typeof window === 'undefined') return null;
-
-  const db = await openDB();
-  const tx = db.transaction(['novels'], 'readonly');
-  const novelsStore = tx.objectStore('novels');
-
-  return new Promise<Novel | null>((resolve, reject) => {
-    const request = novelsStore.get(slug);
-    request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(request.error);
-  }).finally(() => db.close());
+  return withDB(['novels'], 'readonly', async (tx) => {
+    const novelsStore = tx.objectStore('novels');
+    const result = await promisifyRequest<Novel | undefined>(novelsStore.get(slug));
+    return result || null;
+  });
 }
 
 export async function getAllNovels(): Promise<Novel[]> {
-  if (typeof window === 'undefined') return [];
-
-  const db = await openDB();
-  const tx = db.transaction(['novels'], 'readonly');
-  const novelsStore = tx.objectStore('novels');
-
-  return new Promise<Novel[]>((resolve, reject) => {
-    const request = novelsStore.getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  }).finally(() => db.close());
+  return withDB(['novels'], 'readonly', async (tx) => {
+    const novelsStore = tx.objectStore('novels');
+    return promisifyRequest(novelsStore.getAll());
+  });
 }
 
 export async function removeNovel(slug: string): Promise<void> {
-  if (typeof window === 'undefined') return;
+  await withDB(['novels', 'chapters', 'currentChapters'], 'readwrite', async (tx) => {
+    // Remove novel
+    const novelsStore = tx.objectStore('novels');
+    await promisifyRequest(novelsStore.delete(slug));
 
-  const db = await openDB();
-  const tx = db.transaction(['novels', 'chapters', 'currentChapters'], 'readwrite');
+    // Remove chapters
+    const chaptersStore = tx.objectStore('chapters');
+    const index = chaptersStore.index('novelSlug');
+    const chapters = await promisifyRequest<StoredChapter[]>(index.getAll(slug));
+    for (const chapter of chapters) {
+      await promisifyRequest(chaptersStore.delete(chapter.id));
+    }
 
-  // Remove novel
-  const novelsStore = tx.objectStore('novels');
-  await new Promise<void>((resolve, reject) => {
-    const request = novelsStore.delete(slug);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    // Remove current chapter
+    const currentChaptersStore = tx.objectStore('currentChapters');
+    await promisifyRequest(currentChaptersStore.delete(slug));
   });
-
-  // Remove chapters
-  const chaptersStore = tx.objectStore('chapters');
-  const index = chaptersStore.index('novelSlug');
-  const chapters = await new Promise<StoredChapter[]>((resolve, reject) => {
-    const request = index.getAll(slug);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-  for (const chapter of chapters) {
-    await new Promise<void>((resolve, reject) => {
-      const request = chaptersStore.delete(chapter.id);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  // Remove current chapter
-  const currentChaptersStore = tx.objectStore('currentChapters');
-  await new Promise<void>((resolve, reject) => {
-    const request = currentChaptersStore.delete(slug);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-
-  db.close();
 }
 
 export async function listChapters(novelSlug: string): Promise<ChapterInfo[]> {
-  if (typeof window === 'undefined') return [];
-
-  const db = await openDB();
-  const tx = db.transaction(['chapters'], 'readonly');
-  const chaptersStore = tx.objectStore('chapters');
-  const index = chaptersStore.index('novelSlug');
-
-  return new Promise<ChapterInfo[]>((resolve, reject) => {
-    const request = index.getAll(novelSlug);
-    request.onsuccess = () => {
-      const storedChapters = request.result as StoredChapter[];
-      resolve(storedChapters.map(sc => sc.chapter));
-    };
-    request.onerror = () => reject(request.error);
-  }).finally(() => db.close());
+  return withDB(['chapters'], 'readonly', async (tx) => {
+    const chaptersStore = tx.objectStore('chapters');
+    const index = chaptersStore.index('novelSlug');
+    const storedChapters = await promisifyRequest<StoredChapter[]>(index.getAll(novelSlug));
+    return storedChapters.map(sc => sc.chapter);
+  });
 }
 
 export interface CurrentChapter {
@@ -202,115 +169,67 @@ export async function saveCurrentChapter(
   chapterSlug: string,
   chapterName?: string
 ): Promise<void> {
-  if (typeof window === 'undefined') return;
-
-  const db = await openDB();
-  const tx = db.transaction(['currentChapters'], 'readwrite');
-  const store = tx.objectStore('currentChapters');
-
-  const currentChapter: CurrentChapter = { novelSlug, chapterSlug, chapterName };
-
-  await new Promise<void>((resolve, reject) => {
-    const request = store.put(currentChapter);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+  await withDB(['currentChapters'], 'readwrite', async (tx) => {
+    const store = tx.objectStore('currentChapters');
+    const currentChapter: CurrentChapter = { novelSlug, chapterSlug, chapterName };
+    await promisifyRequest(store.put(currentChapter));
   });
-
-  db.close();
 }
 
 export async function getCurrentChapter(novelSlug: string): Promise<CurrentChapter | null> {
-  if (typeof window === 'undefined') return null;
-
-  const db = await openDB();
-  const tx = db.transaction(['currentChapters'], 'readonly');
-  const store = tx.objectStore('currentChapters');
-
-  return new Promise<CurrentChapter | null>((resolve, reject) => {
-    const request = store.get(novelSlug);
-    request.onsuccess = () => {
-      const result = request.result as CurrentChapter | undefined;
-      resolve(result || null);
-    };
-    request.onerror = () => reject(request.error);
-  }).finally(() => db.close());
+  return withDB(['currentChapters'], 'readonly', async (tx) => {
+    const store = tx.objectStore('currentChapters');
+    const result = await promisifyRequest<CurrentChapter | undefined>(store.get(novelSlug));
+    return result || null;
+  });
 }
 
 export async function getChapter(novelSlug: string, chapterSlug: string): Promise<ChapterInfo | null> {
-  if (typeof window === 'undefined') return null;
-
-  const db = await openDB();
-  const tx = db.transaction(['chapters'], 'readonly');
-  const chaptersStore = tx.objectStore('chapters');
-
   const id = `${novelSlug}-${chapterSlug}`;
-  return new Promise<ChapterInfo | null>((resolve, reject) => {
-    const request = chaptersStore.get(id);
-    request.onsuccess = () => {
-      const stored = request.result as StoredChapter | undefined;
-      resolve(stored ? stored.chapter : null);
-    };
-    request.onerror = () => reject(request.error);
-  }).finally(() => db.close());
+  return withDB(['chapters'], 'readonly', async (tx) => {
+    const chaptersStore = tx.objectStore('chapters');
+    const stored = await promisifyRequest<StoredChapter | undefined>(chaptersStore.get(id));
+    return stored ? stored.chapter : null;
+  });
 }
 
-export async function saveChapterSummary(novelSlug: string, chapterSlug: string, summary: string): Promise<void> {
-  if (typeof window === 'undefined') return;
-
-  const db = await openDB();
-  const tx = db.transaction(['chapters'], 'readwrite');
-  const chaptersStore = tx.objectStore('chapters');
-
+export async function saveChapterSummary(
+  novelSlug: string,
+  chapterSlug: string,
+  summary: string
+): Promise<void> {
   const id = `${novelSlug}-${chapterSlug}`;
 
-  // First get the existing chapter
-  const existingChapter = await new Promise<StoredChapter | undefined>((resolve, reject) => {
-    const request = chaptersStore.get(id);
-    request.onsuccess = () => resolve(request.result as StoredChapter | undefined);
-    request.onerror = () => reject(request.error);
+  await withDB(['chapters'], 'readwrite', async (tx) => {
+    const chaptersStore = tx.objectStore('chapters');
+
+    // First get the existing chapter
+    const existingChapter = await promisifyRequest<StoredChapter | undefined>(
+      chaptersStore.get(id)
+    );
+
+    if (!existingChapter) {
+      throw new Error('Chapter not found');
+    }
+
+    // Update the chapter with the summary
+    existingChapter.chapter.chapter.aiSummary = summary;
+
+    // Save back to chapters store
+    await promisifyRequest(chaptersStore.put(existingChapter));
   });
-
-  if (!existingChapter) {
-    db.close();
-    throw new Error('Chapter not found');
-  }
-
-  // Update the chapter with the summary
-  existingChapter.chapter.chapter.aiSummary = summary;
-
-  // Save back to chapters store
-  await new Promise<void>((resolve, reject) => {
-    const request = chaptersStore.put(existingChapter);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-
-  db.close();
 }
 
 export async function updateNovelLastRead(novelSlug: string): Promise<void> {
-  if (typeof window === 'undefined') return;
+  await withDB(['novels'], 'readwrite', async (tx) => {
+    const novelsStore = tx.objectStore('novels');
+    const novel = await promisifyRequest<Novel | undefined>(novelsStore.get(novelSlug));
 
-  const db = await openDB();
-  const tx = db.transaction(['novels'], 'readwrite');
-  const novelsStore = tx.objectStore('novels');
-
-  const novel = await new Promise<Novel | undefined>((resolve, reject) => {
-    const request = novelsStore.get(novelSlug);
-    request.onsuccess = () => resolve(request.result as Novel | undefined);
-    request.onerror = () => reject(request.error);
+    if (novel) {
+      novel.lastReadAt = new Date().toISOString();
+      await promisifyRequest(novelsStore.put(novel));
+    }
   });
-
-  if (novel) {
-    novel.lastReadAt = new Date().toISOString();
-    await new Promise<void>((resolve, reject) => {
-      const request = novelsStore.put(novel);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  db.close();
 }
 
 export async function exportNovel(slug: string): Promise<Novel | null> {
@@ -319,13 +238,13 @@ export async function exportNovel(slug: string): Promise<Novel | null> {
   const db = await openDB();
 
   // Get novel metadata
-  const novel = await new Promise<Novel | null>((resolve, reject) => {
-    const tx = db.transaction(['novels'], 'readonly');
-    const novelsStore = tx.objectStore('novels');
-    const request = novelsStore.get(slug);
-    request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(request.error);
-  });
+  const novel = await promisifyRequest<Novel | null>(
+    (() => {
+      const tx = db.transaction(['novels'], 'readonly');
+      const novelsStore = tx.objectStore('novels');
+      return novelsStore.get(slug);
+    })()
+  );
 
   if (!novel) {
     db.close();
