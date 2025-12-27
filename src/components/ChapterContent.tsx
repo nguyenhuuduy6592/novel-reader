@@ -9,6 +9,7 @@ interface ChapterContentProps {
   isGeneratingSummary: boolean;
   summaryError: string | null;
   onGenerateSummary: () => void;
+  generationTime?: number | null;
 }
 
 export function ChapterContent({
@@ -18,6 +19,7 @@ export function ChapterContent({
   isGeneratingSummary,
   summaryError,
   onGenerateSummary,
+  generationTime,
 }: ChapterContentProps) {
   return (
     <div className={`reading-${themeConfig.background} sm:rounded-lg sm:shadow-md reading-content min-h-[50vh]`}>
@@ -31,6 +33,7 @@ export function ChapterContent({
         isGenerating={isGeneratingSummary}
         error={summaryError}
         onGenerate={onGenerateSummary}
+        generationTime={generationTime}
       />
 
       <div

@@ -10,9 +10,10 @@ interface AiSummaryProps {
   isGenerating: boolean;
   error: string | null;
   onGenerate: () => void;
+  generationTime?: number | null;
 }
 
-export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate }: AiSummaryProps) {
+export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate, generationTime }: AiSummaryProps) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
   // Restore collapsed state on mount
@@ -104,12 +105,19 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
             <div className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-3">
               {summary}
             </div>
-            <button
-              onClick={onGenerate}
-              className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
-            >
-              Regenerate Summary
-            </button>
+            <div className="flex items-center justify-between">
+              {generationTime && (
+                <span className="text-xs text-amber-700">
+                  Generated in {generationTime.toFixed(2)}s
+                </span>
+              )}
+              <button
+                onClick={onGenerate}
+                className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
+              >
+                Regenerate Summary
+              </button>
+            </div>
           </div>
         </details>
       )}

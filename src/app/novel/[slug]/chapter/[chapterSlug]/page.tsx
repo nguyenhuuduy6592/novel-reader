@@ -27,6 +27,7 @@ export default function ChapterPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [generationTime, setGenerationTime] = useState<number | null>(null);
 
   const autoGenerateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentChapterSlugRef = useRef<string>(chapterSlug);
@@ -71,6 +72,9 @@ export default function ChapterPage() {
 
     setIsGeneratingSummary(true);
     setSummaryError(null);
+    setGenerationTime(null);
+
+    const startTime = performance.now();
 
     try {
       const summary = await generateSummaryFromApi({
@@ -80,6 +84,9 @@ export default function ChapterPage() {
         model,
         length: summaryLength,
       });
+
+      const endTime = performance.now();
+      setGenerationTime((endTime - startTime) / 1000);
 
       // Save to IndexedDB
       await saveChapterSummary(slug, currentChapterSlugRef.current, summary);
@@ -238,6 +245,7 @@ export default function ChapterPage() {
         isGeneratingSummary={isGeneratingSummary}
         summaryError={summaryError}
         onGenerateSummary={generateSummary}
+        generationTime={generationTime}
       />
 
       <div className="mt-6 flex justify-center gap-2">
