@@ -6,6 +6,7 @@ const DB_VERSION = 2;
 interface StoredChapter {
   id: string;
   novelSlug: string;
+  sortOrder: number;
   chapter: ChapterInfo;
 }
 
@@ -87,7 +88,8 @@ export async function saveNovel(novel: Novel): Promise<void> {
     // Save chapters if present
     if (novel.chapters) {
       const chaptersStore = tx.objectStore('chapters');
-      for (const chapterInfo of novel.chapters) {
+      for (let i = 0; i < novel.chapters.length; i++) {
+        const chapterInfo = novel.chapters[i];
         const chapterId = `${novel.book.slug}-${chapterInfo.chapter.slug}`;
 
         // Check if chapter already exists and has an AI summary
@@ -109,6 +111,7 @@ export async function saveNovel(novel: Novel): Promise<void> {
         const storedChapter: StoredChapter = {
           id: chapterId,
           novelSlug: novel.book.slug,
+          sortOrder: i,
           chapter: chapterToSave,
         };
         await promisifyRequest(chaptersStore.put(storedChapter));
@@ -157,7 +160,13 @@ export async function listChapters(novelSlug: string): Promise<ChapterInfo[]> {
     const chaptersStore = tx.objectStore('chapters');
     const index = chaptersStore.index('novelSlug');
     const storedChapters = await promisifyRequest<StoredChapter[]>(index.getAll(novelSlug));
-    return storedChapters.map(sc => sc.chapter);
+    // Sort by sortOrder (handle old records without sortOrder by placing them at the end)
+    const sorted = storedChapters.sort((a, b) => {
+      const aOrder = a.sortOrder ?? Infinity;
+      const bOrder = b.sortOrder ?? Infinity;
+      return aOrder - bOrder;
+    });
+    return sorted.map(sc => sc.chapter);
   });
 }
 
