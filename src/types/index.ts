@@ -8,6 +8,7 @@ export interface Novel {
   book: NovelInfo
   chapters?: ChapterInfo[];
   lastReadAt?: string;
+  completedAt?: string;
 }
 
 export interface NovelInfo {
