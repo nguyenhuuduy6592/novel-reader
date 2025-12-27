@@ -30,6 +30,9 @@ export default function NovelPage() {
   // AI settings
   const { aiSettings } = useAiSettings();
 
+  // Batch size state (number of chapters to generate summaries for)
+  const [batchSize, setBatchSize] = useState<number>(10);
+
   // Batch generation state
   const [batchGeneration, setBatchGeneration] = useState<{
     isGenerating: boolean;
@@ -122,13 +125,13 @@ export default function NovelPage() {
     setNovel(n);
   };
 
-  // Get visible chapters for batch generation (respects search filter and 10-item limit)
+  // Get visible chapters for batch generation (respects search filter and batch size limit)
   const getVisibleChaptersForBatch = (): ChapterInfo[] => {
     return chapters
       .filter((chapterInfo) =>
         chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .slice(0, searchTerm ? undefined : 10);
+      .slice(0, searchTerm ? undefined : batchSize);
   };
 
   // Generate AI summaries for visible chapters
@@ -258,7 +261,7 @@ export default function NovelPage() {
       isGenerating: false,
       error: errors.length > 0 ? errors.join('\n') : null,
     }));
-  }, [slug, aiSettings, chapters, searchTerm]);
+  }, [slug, aiSettings, chapters, searchTerm, batchSize]);
 
   // Cancel batch generation
   const cancelBatchGeneration = useCallback((): void => {
@@ -394,14 +397,81 @@ export default function NovelPage() {
                 />
               )}
               {aiSettings.providers[aiSettings.provider]?.apiKey && (
-                <NavButton
-                  icon={<SparklesIcon />}
-                  label={batchGeneration.isGenerating ? 'Generating...' : 'Generate Summaries'}
-                  onClick={generateBatchSummaries}
-                  disabled={batchGeneration.isGenerating}
-                  ariaLabel="Generate AI summaries for visible chapters"
-                  className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 disabled:bg-gray-400"
-                />
+                batchGeneration.isGenerating ? (
+                  <NavButton
+                    icon={<SparklesIcon />}
+                    label="Generating..."
+                    onClick={() => {}}
+                    disabled={true}
+                    ariaLabel="Generating summaries"
+                    className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-purple-500 disabled:bg-gray-400"
+                  />
+                ) : (
+                  <details className="group relative">
+                    <summary className="cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 list-none">
+                      <SparklesIcon />
+                      <span>Generate Summaries ({batchSize === Infinity ? 'All' : batchSize})</span>
+                      <span className="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div className="absolute mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 min-w-fit">
+                      <div className="p-1">
+                        <div className="text-xs text-gray-500 px-2 py-1 font-medium">Select batch size:</div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setBatchSize(10);
+                          }}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                        >
+                          10 chapters
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setBatchSize(100);
+                          }}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                        >
+                          100 chapters
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setBatchSize(1000);
+                          }}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                        >
+                          1,000 chapters
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setBatchSize(Infinity);
+                          }}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                        >
+                          All chapters
+                        </button>
+                        <hr className="my-1 border-gray-200" />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            generateBatchSummaries();
+                            (e.currentTarget.closest('details'))?.removeAttribute('open');
+                          }}
+                          className="block w-full text-left px-3 py-2 text-sm bg-purple-500 text-white hover:bg-purple-600 rounded transition-colors font-medium"
+                        >
+                          Generate
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                )
               )}
             </div>
           </div>
