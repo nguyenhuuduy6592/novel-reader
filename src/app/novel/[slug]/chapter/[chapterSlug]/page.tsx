@@ -140,7 +140,7 @@ export default function ChapterPage() {
       autoGenerateTimeoutRef.current = null;
     }
 
-    if (chapter && aiSettings.autoGenerate && !chapter.chapter.aiSummary) {
+    if (chapter && aiSettings.autoGenerate && !chapter.chapter.aiSummary && !isGeneratingSummary) {
       const { apiKey } = aiSettings.providers[aiSettings.provider];
       if (!apiKey) return;
       autoGenerateTimeoutRef.current = setTimeout(() => {
