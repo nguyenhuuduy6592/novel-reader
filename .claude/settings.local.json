@@ -1,17 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm test)",
+      "Bash(ls -la:*)",
+      "Bash(npm install:*)",
       "Bash(npm run type)",
       "Bash(npm run dev)",
-      "mcp__playwright*",
-      "WebSearch",
-      "Bash(timeout /t*)",
       "Bash(npm run build)",
       "Bash(npm run lint)",
-      "Bash(ls -la*)",
-      "Bash(npm run test*)",
-      "Bash(npm install*)"
+      "Bash(npm run test:*)",
+      "Bash(npm test :*)",
+      "Bash(timeout /t:*)",
+      "mcp__playwright:*",
+      "WebSearch"
     ]
   }
 }
