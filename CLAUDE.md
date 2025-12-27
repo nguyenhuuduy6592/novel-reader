@@ -47,6 +47,32 @@ npm run version-minor   # Bump minor version (0.2.0 -> 0.3.0)
 npm run version-major   # Bump major version (0.2.0 -> 1.0.0)
 ```
 
+### Worktree Management
+
+Git worktrees are used for parallel feature development. Worktrees are stored in `.tree/` directory (added to `.gitignore`).
+
+**Create Worktree** (`worktree:create`):
+- Generates a unique branch name from context (letters, numbers, hyphens, underscores only)
+- Creates worktree: `bash C:/Users/nguye/.claude/scripts/worktree-create.sh <branch-name>`
+
+**Merge Worktree** (`worktree:merge`):
+- Read the folder name of the worktree as branch name
+- Merge the worktree: `bash C:/Users/nguye/.claude/scripts/worktree-merge.sh <folder-name>`
+
+Example workflow:
+```bash
+# 1. Create worktree (from main directory)
+bash C:/Users/nguye/.claude/scripts/worktree-create.sh feature-add-search
+
+# 2. Work in the worktree
+cd .tree/feature-add-search
+# ... make changes, commit ...
+
+# 3. Return to main and merge
+cd ../..
+bash C:/Users/nguye/.claude/scripts/worktree-merge.sh feature-add-search
+```
+
 ## Architecture
 
 ### Data Flow

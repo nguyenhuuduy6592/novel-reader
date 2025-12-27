@@ -24,9 +24,7 @@
       "Bash(cat .gitignore)",
       "Bash(pwd)",
       "mcp__playwright:*",
-      "WebSearch",
-      "Bash(npm run worktree:create:*)",
-      "Bash(npm run worktree:merge:*)"
+      "WebSearch"
     ]
   }
 }
