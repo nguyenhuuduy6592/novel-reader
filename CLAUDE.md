@@ -40,6 +40,30 @@ Tests are located in:
 - Co-located `*.test.ts` or `*.test.tsx` files
 - `src/**/__tests__/**/*.test.{js,jsx,ts,tsx}`
 
+### Testing in Worktrees
+
+⚠️ **Jest does not work properly in worktrees.** The `.tree/` folder structure causes test discovery issues.
+
+**Workaround**:
+1. Navigate to the main branch folder (parent of `.tree/`)
+2. Run the full test suite from main
+3. Use grep to filter relevant test results for your worktree changes
+
+**Example** - When working on feature `fix-chapter-sorting`:
+
+```bash
+# From worktree folder: d:\Code\Personal\novel-reader\.tree\fix-chapter-sorting
+# Navigate to main root
+cd ../..
+
+# Run tests from main and grep for your feature
+npm test 2>&1 | grep -i "sorting\|slug"
+# Or for more comprehensive results:
+npm test 2>&1 | grep -E "(sorting|slug|PASS|FAIL)"
+```
+
+**Detection**: You're in a worktree if your current working directory path contains `.tree/`
+
 ### Versioning
 ```bash
 npm run version-patch   # Bump patch version (0.2.0 -> 0.2.1)
