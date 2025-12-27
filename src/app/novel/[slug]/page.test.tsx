@@ -136,10 +136,10 @@ describe('NovelPage', () => {
     render(<NovelPage />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('nav-button-Remove Novel')).toBeInTheDocument()
+      expect(screen.getByTestId('nav-button-Remove')).toBeInTheDocument()
     })
 
-    await user.click(screen.getByTestId('nav-button-Remove Novel'))
+    await user.click(screen.getByTestId('nav-button-Remove'))
 
     await waitFor(() => {
       expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
@@ -152,10 +152,10 @@ describe('NovelPage', () => {
     render(<NovelPage />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('nav-button-Remove Novel')).toBeInTheDocument()
+      expect(screen.getByTestId('nav-button-Remove')).toBeInTheDocument()
     })
 
-    await user.click(screen.getByTestId('nav-button-Remove Novel'))
+    await user.click(screen.getByTestId('nav-button-Remove'))
     await user.click(screen.getByTestId('confirm-delete'))
 
     await waitFor(() => {

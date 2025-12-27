@@ -45,7 +45,7 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
   return (
     <>
       {/* Error display (shown above content when error exists) */}
-      {error && (
+      {error && !isGenerating && (
         <details
           className="mb-4 group"
           onToggle={handleToggle}
@@ -69,14 +69,22 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
 
       {/* Content: either generate button or summary display */}
       {/* Hide generate button when there's an error (retry button is in error block) */}
-      {!summary && !error ? (
+      {isGenerating ? (
         <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-gray-600 mb-2">
-            {isGenerating ? 'Generating AI summary...' : 'No AI summary available.'}
-          </p>
+          <p className="text-gray-600 mb-2">Generating AI summary...</p>
           <button
             onClick={onGenerate}
-            disabled={isGenerating}
+            disabled
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm cursor-pointer"
+          >
+            Generate Summary
+          </button>
+        </div>
+      ) : !summary && !error ? (
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <p className="text-gray-600 mb-2">No AI summary available.</p>
+          <button
+            onClick={onGenerate}
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm cursor-pointer"
           >
             Generate Summary

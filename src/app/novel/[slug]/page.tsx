@@ -110,7 +110,7 @@ export default function NovelPage() {
   return (
     <PageLayout>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-bold">Novel Details</h1>
+        <h1 className="hidden sm:block text-3xl font-bold">Novel Details</h1>
         <div className="flex gap-2">
           <NavButton
             label="Export"
@@ -120,7 +120,7 @@ export default function NovelPage() {
             className="bg-green-500 hover:bg-green-600 active:bg-green-700 focus:bg-green-700"
           />
           <NavButton
-            label="Remove Novel"
+            label="Remove"
             icon={<TrashIcon />}
             onClick={() => setShowDeleteDialog(true)}
             ariaLabel="Remove novel"
