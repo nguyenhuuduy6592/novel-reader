@@ -131,7 +131,7 @@ export default function ChapterPage() {
       autoGenerateTimeoutRef.current = setTimeout(() => {
         generateSummary();
         autoGenerateTimeoutRef.current = null;
-      }, 1000);
+      }, 500);
     }
 
     // Cleanup on unmount
