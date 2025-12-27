@@ -339,7 +339,7 @@ export default function NovelPage() {
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex flex-col lg:flex-row gap-8 mb-8">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mx-auto lg:mx-0">
             <Image
               src={novel.book.coverUrl}
               alt={novel.book.name}
