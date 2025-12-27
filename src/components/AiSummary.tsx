@@ -41,17 +41,6 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
     }
   };
 
-  // Loading state
-  if (isGenerating) {
-    return (
-      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg animate-pulse">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-blue-700">Generating AI summary...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -82,10 +71,13 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
       {/* Hide generate button when there's an error (retry button is in error block) */}
       {!summary && !error ? (
         <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-gray-600 mb-2">No AI summary available.</p>
+          <p className="text-gray-600 mb-2">
+            {isGenerating ? 'Generating AI summary...' : 'No AI summary available.'}
+          </p>
           <button
             onClick={onGenerate}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm cursor-pointer"
+            disabled={isGenerating}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm cursor-pointer"
           >
             Generate Summary
           </button>
@@ -108,7 +100,8 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
             <div className="flex items-center justify-between">
               <button
                 onClick={onGenerate}
-                className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
+                disabled={isGenerating}
+                className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 disabled:bg-amber-400 disabled:cursor-not-allowed cursor-pointer"
               >
                 Regenerate Summary
               </button>
