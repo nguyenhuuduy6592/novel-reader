@@ -83,6 +83,26 @@ describe('AiSummary', () => {
       fireEvent.click(screen.getByText('Generate Summary'));
       expect(onGenerate).toHaveBeenCalledTimes(1);
     });
+
+    it('hides generate button when autoGenerate is enabled', () => {
+      const autoGenerateSettings: AiSettings = {
+        ...mockAiSettings,
+        autoGenerate: true
+      };
+
+      render(
+        <AiSummary
+          aiSettings={autoGenerateSettings}
+          summary={null}
+          isGenerating={false}
+          error={null}
+          onGenerate={jest.fn()}
+        />
+      );
+
+      expect(screen.getByText('No AI summary available.')).toBeInTheDocument();
+      expect(screen.queryByText('Generate Summary')).not.toBeInTheDocument();
+    });
   });
 
   describe('when summary exists', () => {
@@ -116,6 +136,26 @@ describe('AiSummary', () => {
 
       fireEvent.click(screen.getByText('Regenerate Summary'));
       expect(onGenerate).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows regenerate button even when autoGenerate is enabled', () => {
+      const autoGenerateSettings: AiSettings = {
+        ...mockAiSettings,
+        autoGenerate: true
+      };
+
+      render(
+        <AiSummary
+          aiSettings={autoGenerateSettings}
+          summary="Test summary"
+          isGenerating={false}
+          error={null}
+          onGenerate={jest.fn()}
+        />
+      );
+
+      expect(screen.getByText('Test summary')).toBeInTheDocument();
+      expect(screen.getByText('Regenerate Summary')).toBeInTheDocument();
     });
   });
 
