@@ -102,21 +102,21 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
             <span className="text-amber-600 group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-b-lg">
-            <div className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-3">
+            <p className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-2">
               {summary}
-            </div>
+            </p>
             <div className="flex items-center justify-between">
-              {generationTime && (
-                <span className="text-xs text-amber-700">
-                  Generated in {generationTime.toFixed(2)}s
-                </span>
-              )}
               <button
                 onClick={onGenerate}
                 className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 cursor-pointer"
               >
                 Regenerate Summary
               </button>
+              {generationTime && (
+                <span className="text-xs text-amber-700">
+                  Generated in {generationTime.toFixed(2)}s
+                </span>
+              )}
             </div>
           </div>
         </details>
