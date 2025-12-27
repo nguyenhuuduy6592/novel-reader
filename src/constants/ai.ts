@@ -14,6 +14,7 @@ export interface GenerateSummaryOptions {
   apiKey: string;
   model: string;
   length?: SummaryLength;
+  signal?: AbortSignal;
 }
 
 export interface ProviderApiFunction {
@@ -56,7 +57,7 @@ export const AI_PROVIDERS = {
 } as const satisfies Record<AiProvider, { label: string; defaultModel: string; placeholder: string; modelOptions: readonly { value: string; label: string }[] }>;
 
 // Provider API implementations
-async function generateWithOpenRouter({ content, apiKey, model, length = 'medium' }: GenerateSummaryOptions): Promise<string> {
+async function generateWithOpenRouter({ content, apiKey, model, length = 'medium', signal }: GenerateSummaryOptions): Promise<string> {
   const prompt = AI_SUMMARY_PROMPT(content, length);
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -71,6 +72,7 @@ async function generateWithOpenRouter({ content, apiKey, model, length = 'medium
       model,
       messages: [{ role: 'user', content: prompt }],
     }),
+    signal,
   });
 
   if (!response.ok) {
@@ -102,7 +104,7 @@ async function generateWithOpenRouter({ content, apiKey, model, length = 'medium
   return data.choices[0].message.content;
 }
 
-async function generateWithGoogle({ content, apiKey, model, length = 'medium' }: GenerateSummaryOptions): Promise<string> {
+async function generateWithGoogle({ content, apiKey, model, length = 'medium', signal }: GenerateSummaryOptions): Promise<string> {
   const prompt = AI_SUMMARY_PROMPT(content, length);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -110,6 +112,7 @@ async function generateWithGoogle({ content, apiKey, model, length = 'medium' }:
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    signal,
   });
 
   if (!response.ok) {
@@ -136,7 +139,7 @@ async function generateWithGoogle({ content, apiKey, model, length = 'medium' }:
   return data.candidates[0].content.parts[0].text;
 }
 
-async function generateWithZai({ content, apiKey, model, length = 'medium' }: GenerateSummaryOptions): Promise<string> {
+async function generateWithZai({ content, apiKey, model, length = 'medium', signal }: GenerateSummaryOptions): Promise<string> {
   const prompt = AI_SUMMARY_PROMPT(content, length);
 
   const response = await fetch('https://api.z.ai/api/coding/paas/v4/chat/completions', {
@@ -152,6 +155,7 @@ async function generateWithZai({ content, apiKey, model, length = 'medium' }: Ge
         type: "enabled"
       }
     }),
+    signal,
   });
 
   if (!response.ok) {
