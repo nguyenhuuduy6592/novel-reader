@@ -183,8 +183,14 @@ export default function NovelPage() {
         continue;
       }
 
+      // Check abort before starting async work
+      if (abortController.signal.aborted) break;
+
       try {
         const fullChapter = await getChapter(slug, chapterSlug);
+
+        // Check abort after fetch
+        if (abortController.signal.aborted) break;
 
         if (!fullChapter) {
           errors.push(`Chapter ${chapterInfo.chapter.name} not found`);
@@ -201,9 +207,16 @@ export default function NovelPage() {
           provider,
           model,
           length: summaryLength,
+          signal: abortController.signal,
         });
 
+        // Check abort after API call
+        if (abortController.signal.aborted) break;
+
         await saveChapterSummary(slug, chapterSlug, summary);
+
+        // Check abort after save
+        if (abortController.signal.aborted) break;
 
         setChapters(prevChapters =>
           prevChapters.map(c =>
@@ -219,6 +232,9 @@ export default function NovelPage() {
           )
         );
       } catch (err) {
+        // Check if error was due to abort
+        if (abortController.signal.aborted) break;
+
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         errors.push(`${chapterInfo.chapter.name}: ${errorMessage}`);
       }
