@@ -12,14 +12,10 @@ export default function Page() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch('/api/code')
-      .then(res => res.json())
-      .then(data => {
-        if (data.content) {
-          setContent(data.content);
-        } else {
-          setError(data.error || 'Failed to load content');
-        }
+    fetch('/browserNovelExtractor.js')
+      .then(res => res.text())
+      .then(text => {
+        setContent(text);
       })
       .catch(err => {
         setError('Failed to fetch content');
