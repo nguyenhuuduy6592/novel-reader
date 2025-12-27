@@ -13,8 +13,8 @@
     "version-patch": "npm version patch && git push --follow-tags",
     "version-minor": "npm version minor && git push --follow-tags",
     "version-major": "npm version major && git push --follow-tags",
-    "worktree:create": "pwsh -NoProfile -File C:\\Users\\nguye\\.claude\\scripts\\worktree-create.ps1",
-    "worktree:merge": "pwsh -NoProfile -File C:\\Users\\nguye\\.claude\\scripts\\worktree-merge.ps1"
+    "worktree:create": "bash C:/Users/nguye/.claude/scripts/worktree-create.sh",
+    "worktree:merge": "bash C:/Users/nguye/.claude/scripts/worktree-merge.sh"
   },
   "dependencies": {
     "@types/dompurify": "^3.0.5",
