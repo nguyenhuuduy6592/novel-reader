@@ -12,7 +12,9 @@
     "test:coverage": "jest --coverage",
     "version-patch": "npm version patch && git push --follow-tags",
     "version-minor": "npm version minor && git push --follow-tags",
-    "version-major": "npm version major && git push --follow-tags"
+    "version-major": "npm version major && git push --follow-tags",
+    "worktree:create": "pwsh -NoProfile -File C:\\Users\\nguye\\.claude\\scripts\\worktree-create.ps1",
+    "worktree:merge": "pwsh -NoProfile -File C:\\Users\\nguye\\.claude\\scripts\\worktree-merge.ps1"
   },
   "dependencies": {
     "@types/dompurify": "^3.0.5",
