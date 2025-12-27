@@ -33,7 +33,8 @@
       "Bash(npm test -- src/hooks/__tests__/useChapterNavigation.test.ts)",
       "Bash(npm test -- src/app/novel/[slug]/chapter/[chapterSlug]/page.test.tsx)",
       "Bash(npm test -- --testPathPattern=\"chapter.*page\" --passWithNoTests)",
-      "Bash(npm test -- --testPathPatterns=\"chapter\" --passWithNoTests)"
+      "Bash(npm test -- --testPathPatterns=\"chapter\" --passWithNoTests)",
+      "Bash(bash C:/Users/nguye/.claude/scripts/worktree-create.sh feature-batch-summary-dropdown)"
     ]
   }
 }
