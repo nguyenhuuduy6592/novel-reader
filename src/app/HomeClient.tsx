@@ -32,7 +32,7 @@ export default function HomeClient({ version }: { version: string }) {
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-1 md:gap-4">
           <h1 className="text-3xl font-bold whitespace-nowrap">Novel Reader</h1>
           <span className="text-sm text-gray-500 font-medium">
@@ -41,7 +41,7 @@ export default function HomeClient({ version }: { version: string }) {
         </div>
         <Link
           href="/import"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 whitespace-nowrap"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 whitespace-nowrap sm:justify-start"
         >
           <ImportIcon />
           Import Novel
@@ -68,17 +68,17 @@ export default function HomeClient({ version }: { version: string }) {
                         className="w-full object-cover rounded-md hover:opacity-90 transition-opacity duration-200 mb-2"
                         priority={true}
                       />
-                      <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:underline">{novel.book.name}</h3>
+                      <h3 className="font-semibold text-lg mb-2 hover:underline break-words">{novel.book.name}</h3>
                     </Link>
-                    <p className="text-gray-600 mb-2 text-sm">by {novel.book.author.name}</p>
-                    <p className="text-sm text-gray-500 mb-2 line-clamp-3">
+                    <p className="text-gray-600 mb-3 text-sm">by {novel.book.author.name}</p>
+                    <p className="text-sm text-gray-500 mb-2">
                       Chapter count: {novel.book.chapterCount}
-                      {currentChapterSlug && (
-                        <span className="block mt-1 text-green-600 font-medium">
-                          📖 Current: {currentChapterName || ''}
-                        </span>
-                      )}
                     </p>
+                    {currentChapterSlug && (
+                      <p className="text-xs text-green-600 mb-3 font-medium break-words" title={currentChapterName || ''}>
+                        📖 Current: {currentChapterName || ''}
+                      </p>
+                    )}
                     <Link
                       href={chapterHref}
                       className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white font-medium transition-colors w-full ${

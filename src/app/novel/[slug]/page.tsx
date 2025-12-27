@@ -114,7 +114,7 @@ export default function NovelPage() {
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold">Novel Details</h1>
         <div className="flex gap-2">
           <NavButton
@@ -171,28 +171,30 @@ export default function NovelPage() {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold mb-4 line-clamp-2">{novel.book.name}</h1>
+            <h1 className="text-3xl font-bold mb-4 break-words">{novel.book.name}</h1>
             <p className="text-xl text-gray-600 mb-4">by {novel.book.author.name}</p>
             <div className="mb-6">
-              <span className="text-lg text-gray-500">
+              <p className="text-lg text-gray-500 mb-2">
                 {novel.book.chapterCount} chapters
-                {currentChapterSlug && (
-                  <span className="ml-4 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                    📖 Current: {currentChapterName || ''}
-                  </span>
-                )}
-              </span>
+              </p>
+              {currentChapterSlug && (
+                <p className="text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium break-words" title={currentChapterName || ''}>
+                  📖 Current: {currentChapterName || ''}
+                </p>
+              )}
             </div>
-            <Link
-              href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
-              className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-lg transition-colors w-fit ${
-                currentChapterSlug
-                  ? 'bg-blue-500 hover:bg-blue-600'
-                  : 'bg-green-500 hover:bg-green-600'
-              }`}
-            >
-              {currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href={currentChapterSlug ? `/novel/${slug}/chapter/${currentChapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
+                className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-lg transition-colors w-full sm:w-fit ${
+                  currentChapterSlug
+                    ? 'bg-blue-500 hover:bg-blue-600'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {currentChapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
+              </Link>
+            </div>
           </div>
         </div>
 

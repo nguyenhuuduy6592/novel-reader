@@ -97,7 +97,7 @@ export function AiSummary({ aiSettings, summary, isGenerating, error, onGenerate
             <p className="prose prose-sm max-w-none text-amber-900 whitespace-pre-line mb-2">
               {summary}
             </p>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <button
                 onClick={onGenerate}
                 disabled={isGenerating}
