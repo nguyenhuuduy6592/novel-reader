@@ -44,6 +44,10 @@ export default function ChapterPage() {
     if (ch) {
       setIsLoading(false);
       setError(null);
+      // Update the ref to track the current chapter for summary saving
+      if (ch.chapter.slug) {
+        currentChapterSlugRef.current = ch.chapter.slug;
+      }
     } else {
       setIsLoading(false);
       setError('Chapter not found');
