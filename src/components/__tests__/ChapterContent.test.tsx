@@ -34,7 +34,8 @@ const mockAiSettings: AiSettings = {
   provider: 'openrouter' as AiProvider,
   providers: {
     openrouter: { apiKey: 'test-key', model: 'deepseek/deepseek-chat' },
-    google: { apiKey: '', model: 'gemini-2.0-flash-exp' }
+    google: { apiKey: '', model: 'gemini-2.0-flash-exp' },
+    zai: { apiKey: '', model: 'glm-4.5-air' }
   },
   autoGenerate: false,
   summaryLength: 'medium'

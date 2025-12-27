@@ -7,7 +7,7 @@ export interface ThemeOption {
 
 export type SummaryLength = 'short' | 'medium';
 
-export type AiProvider = 'openrouter' | 'google';
+export type AiProvider = 'openrouter' | 'google' | 'zai';
 
 export interface GenerateSummaryOptions {
   content: string;
@@ -40,6 +40,17 @@ export const AI_PROVIDERS = {
     modelOptions: [
       { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
       { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    ] as const,
+  },
+  zai: {
+    label: 'Z.ai (GLM)',
+    defaultModel: 'glm-4.5-air',
+    placeholder: 'Your Z.ai API key',
+    modelOptions: [
+      { value: 'glm-4.7', label: 'GLM 4.7' },
+      { value: 'glm-4.6', label: 'GLM 4.6' },
+      { value: 'glm-4.5', label: 'GLM 4.5' },
+      { value: 'glm-4.5-air', label: 'GLM 4.5 Air' }
     ] as const,
   },
 } as const satisfies Record<AiProvider, { label: string; defaultModel: string; placeholder: string; modelOptions: readonly { value: string; label: string }[] }>;
@@ -125,10 +136,52 @@ async function generateWithGoogle({ content, apiKey, model, length = 'medium' }:
   return data.candidates[0].content.parts[0].text;
 }
 
+async function generateWithZai({ content, apiKey, model, length = 'medium' }: GenerateSummaryOptions): Promise<string> {
+  const prompt = AI_SUMMARY_PROMPT(content, length);
+
+  const response = await fetch('https://api.z.ai/api/coding/paas/v4/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Z.ai API error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      if (typeof errorData.error === 'string') {
+        errorMessage = errorData.error;
+      } else if (typeof errorData.error === 'object' && errorData.error?.message) {
+        errorMessage = errorData.error.message;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else {
+        errorMessage = JSON.stringify(errorData);
+      }
+    } catch {
+      errorMessage = response.statusText || `Z.ai API error: ${response.status}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  if (!data.choices?.[0]?.message?.content) {
+    throw new Error('Invalid response from Z.ai API');
+  }
+  return data.choices[0].message.content;
+}
+
 // Central registry of provider API functions
 export const AI_PROVIDER_APIS: Record<AiProvider, ProviderApiFunction> = {
   openrouter: generateWithOpenRouter,
   google: generateWithGoogle,
+  zai: generateWithZai,
 };
 
 export const AI_PROVIDER_OPTIONS = Object.entries(AI_PROVIDERS).map(([value, { label }]) => ({ value, label }));

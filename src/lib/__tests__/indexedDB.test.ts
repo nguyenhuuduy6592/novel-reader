@@ -253,8 +253,8 @@ describe('indexedDB', () => {
       expect(exported?.book.slug).toBe('test-novel');
       expect(exported?.book.name).toBe('Test Novel');
       expect(exported?.chapters).toHaveLength(2);
-      expect(exported?.chapters[0]?.chapter.slug).toBe('chap-1');
-      expect(exported?.chapters[1]?.chapter.slug).toBe('chap-2');
+      expect(exported?.chapters?.[0]?.chapter.slug).toBe('chap-1');
+      expect(exported?.chapters?.[1]?.chapter.slug).toBe('chap-2');
     });
 
     it('includes AI summaries in export', async () => {
@@ -263,7 +263,7 @@ describe('indexedDB', () => {
 
       const exported = await exportNovel('test-novel');
 
-      expect(exported?.chapters[0]?.chapter.aiSummary).toBe('AI-generated summary');
+      expect(exported?.chapters?.[0]?.chapter.aiSummary).toBe('AI-generated summary');
     });
 
     it('returns null for non-existent novel', async () => {
