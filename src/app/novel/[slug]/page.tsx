@@ -1,15 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, CurrentChapter } from '@/lib/indexedDB';
+import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, getChapter, saveChapterSummary, CurrentChapter } from '@/lib/indexedDB';
 import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
-import { HomeIcon, TrashIcon, DownloadIcon } from '@/lib/icons';
+import { HomeIcon, TrashIcon, DownloadIcon, SparklesIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useAiSettings } from '@/hooks/useAiSettings';
+import { generateSummary } from '@/lib/aiSummary';
+import { AI_PROVIDERS } from '@/constants/ai';
 
 export default function NovelPage() {
   const params = useParams();
@@ -23,6 +26,26 @@ export default function NovelPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // AI settings
+  const { aiSettings } = useAiSettings();
+
+  // Batch generation state
+  const [batchGeneration, setBatchGeneration] = useState<{
+    isGenerating: boolean;
+    currentIndex: number;
+    total: number;
+    error: string | null;
+    cancelled: boolean;
+  }>({
+    isGenerating: false,
+    currentIndex: 0,
+    total: 0,
+    error: null,
+    cancelled: false,
+  });
+
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const loadNovel = async () => {
@@ -47,6 +70,13 @@ export default function NovelPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   const handleDeleteNovel = async () => {
@@ -85,6 +115,144 @@ export default function NovelPage() {
       alert('Failed to export novel. Please try again.');
     }
   };
+
+  // Get visible chapters for batch generation (respects search filter and 10-item limit)
+  const getVisibleChaptersForBatch = (): ChapterInfo[] => {
+    return chapters
+      .filter((chapterInfo) =>
+        chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .slice(0, searchTerm ? undefined : 10);
+  };
+
+  // Generate AI summaries for visible chapters
+  const generateBatchSummaries = useCallback(async (): Promise<void> => {
+    const { provider, providers, summaryLength } = aiSettings;
+    const { apiKey, model } = providers[provider];
+
+    if (!apiKey) {
+      setBatchGeneration(prev => ({
+        ...prev,
+        error: `Please set your ${AI_PROVIDERS[provider].label} API key in settings.`,
+      }));
+      return;
+    }
+
+    const visibleChapters = getVisibleChaptersForBatch();
+
+    if (visibleChapters.length === 0) {
+      setBatchGeneration(prev => ({
+        ...prev,
+        error: 'No chapters to process.',
+      }));
+      return;
+    }
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    setBatchGeneration({
+      isGenerating: true,
+      currentIndex: 0,
+      total: visibleChapters.length,
+      error: null,
+      cancelled: false,
+    });
+
+    const errors: string[] = [];
+
+    for (let i = 0; i < visibleChapters.length; i++) {
+      if (abortController.signal.aborted) {
+        setBatchGeneration(prev => ({
+          ...prev,
+          isGenerating: false,
+          cancelled: true,
+        }));
+        break;
+      }
+
+      const chapterInfo = visibleChapters[i];
+      const chapterSlug = chapterInfo.chapter.slug;
+
+      // Skip if no slug or already has summary
+      if (!chapterSlug || chapterInfo.chapter.aiSummary) {
+        setBatchGeneration(prev => ({
+          ...prev,
+          currentIndex: i + 1,
+        }));
+        continue;
+      }
+
+      try {
+        const fullChapter = await getChapter(slug, chapterSlug);
+
+        if (!fullChapter) {
+          errors.push(`Chapter ${chapterInfo.chapter.name} not found`);
+          setBatchGeneration(prev => ({
+            ...prev,
+            currentIndex: i + 1,
+          }));
+          continue;
+        }
+
+        const summary = await generateSummary({
+          content: fullChapter.chapter.content,
+          apiKey,
+          provider,
+          model,
+          length: summaryLength,
+        });
+
+        await saveChapterSummary(slug, chapterSlug, summary);
+
+        setChapters(prevChapters =>
+          prevChapters.map(c =>
+            c.chapter.slug === chapterSlug
+              ? {
+                  ...c,
+                  chapter: {
+                    ...c.chapter,
+                    aiSummary: summary,
+                  },
+                }
+              : c
+          )
+        );
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        errors.push(`${chapterInfo.chapter.name}: ${errorMessage}`);
+      }
+
+      setBatchGeneration(prev => ({
+        ...prev,
+        currentIndex: i + 1,
+      }));
+    }
+
+    abortControllerRef.current = null;
+
+    setBatchGeneration(prev => ({
+      ...prev,
+      isGenerating: false,
+      error: errors.length > 0 ? errors.join('\n') : null,
+    }));
+  }, [slug, aiSettings, chapters, searchTerm]);
+
+  // Cancel batch generation
+  const cancelBatchGeneration = useCallback((): void => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  // Escape key to cancel batch generation
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && batchGeneration.isGenerating) {
+        cancelBatchGeneration();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [batchGeneration.isGenerating, cancelBatchGeneration]);
 
   if (!novel) {
     return (
@@ -180,14 +348,24 @@ export default function NovelPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={currentChapter?.chapterSlug ? `/novel/${slug}/chapter/${currentChapter.chapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
-                className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg text-white font-semibold text-lg transition-colors w-full sm:w-fit ${
+                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm text-white font-semibold text-lg transition-colors w-full sm:w-fit cursor-pointer ${
                   currentChapter?.chapterSlug
-                    ? 'bg-blue-500 hover:bg-blue-600'
-                    : 'bg-green-500 hover:bg-green-600'
+                    ? 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
+                    : 'bg-green-500 hover:bg-green-600 active:bg-green-700'
                 }`}
               >
                 {currentChapter?.chapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
               </Link>
+              {aiSettings.providers[aiSettings.provider]?.apiKey && (
+                <NavButton
+                  icon={<SparklesIcon />}
+                  label={batchGeneration.isGenerating ? 'Generating...' : 'Generate Summaries'}
+                  onClick={generateBatchSummaries}
+                  disabled={batchGeneration.isGenerating}
+                  ariaLabel="Generate AI summaries for visible chapters"
+                  className="px-6 py-3 rounded-lg font-semibold w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 disabled:bg-gray-400"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -204,6 +382,49 @@ export default function NovelPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* Progress during generation */}
+            {batchGeneration.isGenerating && (
+              <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-purple-800 font-medium">
+                    Generating summaries: {batchGeneration.currentIndex}/{batchGeneration.total}
+                  </span>
+                </div>
+                <button
+                  onClick={cancelBatchGeneration}
+                  className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Cancellation message */}
+            {!batchGeneration.isGenerating && batchGeneration.cancelled && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800">Generation cancelled at {batchGeneration.currentIndex}/{batchGeneration.total}</p>
+              </div>
+            )}
+
+            {/* Error summary */}
+            {!batchGeneration.isGenerating && batchGeneration.error && !batchGeneration.cancelled && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 font-medium mb-2">Generation completed with errors:</p>
+                <pre className="text-red-700 text-sm whitespace-pre-wrap">{batchGeneration.error}</pre>
+              </div>
+            )}
+
+            {/* Success message */}
+            {!batchGeneration.isGenerating && !batchGeneration.error && batchGeneration.total > 0 && !batchGeneration.cancelled && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-800">
+                  Successfully generated {batchGeneration.currentIndex}/{batchGeneration.total} summaries!
+                </p>
+              </div>
+            )}
+
             <h2 className="text-lg font-bold mb-2">Chapters</h2>
             <div className="space-y-0.5">
               {chapters
