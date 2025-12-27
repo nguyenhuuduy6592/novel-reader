@@ -12,6 +12,7 @@ import { Novel } from '@/types';
 jest.mock('@/lib/indexedDB', () => ({
   getAllNovels: jest.fn(),
   getCurrentChapter: jest.fn(),
+  unmarkNovelCompleted: jest.fn(),
 }));
 
 // Mock the Next.js Image component
@@ -26,7 +27,7 @@ jest.mock('next/link', () => ({
   default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => <a href={href} {...props}>{children}</a>,
 }));
 
-const { getAllNovels, getCurrentChapter } = jest.requireMock('@/lib/indexedDB');
+const { getAllNovels, getCurrentChapter, unmarkNovelCompleted } = jest.requireMock('@/lib/indexedDB');
 
 const mockNovels: Novel[] = [
   {
@@ -69,6 +70,35 @@ const mockNovels: Novel[] = [
     ],
   },
 ];
+
+const mockCompletedNovel: Novel = {
+  book: {
+    bookId: 3,
+    slug: 'completed-novel',
+    coverUrl: '/cover3.jpg',
+    name: 'Completed Novel',
+    chapterCount: 3,
+    author: { name: 'Author Three' },
+  },
+  chapters: [
+    {
+      chapter: { name: 'Chapter 1', slug: 'chap-1', content: 'Content 1' },
+      nextChapter: { name: 'Chapter 2', slug: 'chap-2', content: '' },
+      prevChapter: undefined,
+    },
+    {
+      chapter: { name: 'Chapter 2', slug: 'chap-2', content: 'Content 2' },
+      nextChapter: { name: 'Chapter 3', slug: 'chap-3', content: '' },
+      prevChapter: { name: 'Chapter 1', slug: 'chap-1', content: '' },
+    },
+    {
+      chapter: { name: 'Chapter 3', slug: 'chap-3', content: 'Content 3' },
+      nextChapter: undefined,
+      prevChapter: { name: 'Chapter 2', slug: 'chap-2', content: '' },
+    },
+  ],
+  completedAt: '2024-01-15T10:30:00.000Z',
+};
 
 describe('Home', () => {
   beforeEach(() => {
@@ -313,6 +343,84 @@ describe('Home', () => {
         // Just verify the continue buttons are rendered
         const continueButtons = screen.getAllByText('Continue Reading');
         expect(continueButtons.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('Completion Feature', () => {
+    it('shows completion badge for completed novels', async () => {
+      (getAllNovels as jest.Mock).mockResolvedValue([mockCompletedNovel]);
+      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
+
+      render(<Home />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Completed')).toBeInTheDocument();
+      });
+    });
+
+    it('shows "Start Again" button for completed novels', async () => {
+      (getAllNovels as jest.Mock).mockResolvedValue([mockCompletedNovel]);
+      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
+
+      render(<Home />);
+
+      await waitFor(() => {
+        const startAgainButtons = screen.getAllByText('Start Again');
+        expect(startAgainButtons.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('does not show "Read Novel" button for completed novels', async () => {
+      (getAllNovels as jest.Mock).mockResolvedValue([mockCompletedNovel]);
+      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
+
+      render(<Home />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Read Novel')).not.toBeInTheDocument();
+      });
+    });
+
+    it('does not show "Continue Reading" button for completed novels', async () => {
+      (getAllNovels as jest.Mock).mockResolvedValue([mockCompletedNovel]);
+      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
+
+      render(<Home />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Continue Reading')).not.toBeInTheDocument();
+      });
+    });
+
+    it('calls unmarkNovelCompleted and navigates when "Start Again" is clicked', async () => {
+      (getAllNovels as jest.Mock).mockResolvedValue([mockCompletedNovel]);
+      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
+      (unmarkNovelCompleted as jest.Mock).mockResolvedValue(undefined);
+
+      const { container } = render(<Home />);
+
+      await waitFor(() => {
+        const startAgainButton = screen.getAllByText('Start Again')[0];
+        expect(startAgainButton).toBeInTheDocument();
+      });
+
+      const startAgainButton = screen.getAllByText('Start Again')[0];
+      startAgainButton.click();
+
+      await waitFor(() => {
+        expect(unmarkNovelCompleted).toHaveBeenCalledWith('completed-novel');
+      });
+    });
+
+    it('does not show completion badge for incomplete novels', async () => {
+      (getAllNovels as jest.Mock).mockResolvedValue(mockNovels);
+      (getCurrentChapter as jest.Mock).mockResolvedValue(null);
+
+      render(<Home />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Completed')).not.toBeInTheDocument();
       });
     });
   });

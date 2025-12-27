@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ChapterPage from '@/app/novel/[slug]/chapter/[chapterSlug]/page'
-import { getNovel, getChapter, saveCurrentChapter, listChapters } from '@/lib/indexedDB'
+import { getNovel, getChapter, saveCurrentChapter, listChapters, markNovelCompleted, deleteCurrentChapter } from '@/lib/indexedDB'
 import { Novel, ChapterInfo } from '@/types'
 import * as nextNavigation from 'next/navigation'
 
@@ -59,6 +59,8 @@ describe('ChapterPage', () => {
     ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
     ;(saveCurrentChapter as jest.Mock).mockResolvedValue(undefined)
     ;(listChapters as jest.Mock).mockResolvedValue(mockChapters)
+    ;(markNovelCompleted as jest.Mock).mockResolvedValue(undefined)
+    ;(deleteCurrentChapter as jest.Mock).mockResolvedValue(undefined)
     mockPush.mockClear()
     mockReplace.mockClear()
     mockScrollTo.mockClear()
@@ -358,6 +360,148 @@ describe('ChapterPage', () => {
         '',
         '/novel/test-novel/chapter/chuong-3'
       )
+    })
+  })
+
+  describe('Completion Feature - "Mark as Completed" button', () => {
+    it('shows "Mark as Completed" button on last chapter (no next chapter)', async () => {
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[2]) // Last chapter
+      ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Mark as Completed')).toBeInTheDocument()
+      })
+    })
+
+    it('does not show "Mark as Completed" button on first chapter', async () => {
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-1',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[0]) // First chapter
+      ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Mark as Completed')).not.toBeInTheDocument()
+      })
+    })
+
+    it('does not show "Mark as Completed" button on middle chapter', async () => {
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[1]) // Middle chapter
+      ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Mark as Completed')).not.toBeInTheDocument()
+      })
+    })
+
+    it('calls markNovelCompleted and deleteCurrentChapter when button is clicked', async () => {
+      const user = userEvent.setup()
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[2]) // Last chapter
+      ;(getNovel as jest.Mock)
+        .mockResolvedValueOnce(mockNovel) // Initial load - not completed
+        .mockResolvedValueOnce({ ...mockNovel, completedAt: '2024-01-15T10:30:00.000Z' }) // After marking
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        const button = screen.getByText('Mark as Completed')
+        expect(button).toBeInTheDocument()
+        expect(button).not.toBeDisabled()
+      })
+
+      const button = screen.getByText('Mark as Completed')
+      await user.click(button)
+
+      await waitFor(() => {
+        expect(markNovelCompleted).toHaveBeenCalledWith('test-novel')
+        expect(deleteCurrentChapter).toHaveBeenCalledWith('test-novel')
+      })
+    })
+
+    it('shows "Completed" state when novel is already completed', async () => {
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[2]) // Last chapter
+      ;(getNovel as jest.Mock).mockResolvedValue({
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      })
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        const button = screen.getByText('Completed')
+        expect(button).toBeInTheDocument()
+        expect(button).toBeDisabled()
+      })
+    })
+
+    it('does not show "Mark as Completed" text when already completed', async () => {
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[2]) // Last chapter
+      ;(getNovel as jest.Mock).mockResolvedValue({
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      })
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Mark as Completed')).not.toBeInTheDocument()
+        expect(screen.getByText('Completed')).toBeInTheDocument()
+      })
+    })
+
+    it('does not show "Next Chapter" button on last chapter (shows Mark as Completed instead)', async () => {
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[2]) // Last chapter
+      ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Next Chapter')).not.toBeInTheDocument()
+        expect(screen.getByText('Mark as Completed')).toBeInTheDocument()
+      })
+    })
+
+    it('button has green styling', async () => {
+      ;(nextNavigation.useParams as jest.Mock).mockReturnValue({
+        slug: 'test-novel',
+        chapterSlug: 'chuong-3',
+      })
+      ;(getChapter as jest.Mock).mockResolvedValue(mockChapters[2]) // Last chapter
+      ;(getNovel as jest.Mock).mockResolvedValue(mockNovel)
+
+      render(<ChapterPage />)
+
+      await waitFor(() => {
+        const button = screen.getByText('Mark as Completed')
+        expect(button).toHaveClass('bg-green-500')
+      })
     })
   })
 })

@@ -9,6 +9,7 @@ jest.mock('@/lib/indexedDB', () => ({
   listChapters: jest.fn(),
   removeNovel: jest.fn(),
   exportNovel: jest.fn(),
+  unmarkNovelCompleted: jest.fn(),
 }))
 
 const mockPush = jest.fn()
@@ -47,7 +48,7 @@ jest.mock('@/components/PageLayout', () => {
   }
 })
 
-import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel } from '@/lib/indexedDB'
+import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, unmarkNovelCompleted } from '@/lib/indexedDB'
 
 describe('NovelPage', () => {
   const mockNovel = {
@@ -84,6 +85,7 @@ describe('NovelPage', () => {
       ...mockNovel,
       chapters: mockChapters,
     })
+    ;(unmarkNovelCompleted as jest.Mock).mockResolvedValue(undefined)
   })
 
   it('renders novel details', async () => {
@@ -179,6 +181,108 @@ describe('NovelPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Novel not found.')).toBeInTheDocument()
+    })
+  })
+
+  describe('Completion Feature - "Unmark Completed" button', () => {
+    it('shows completion badge when novel is completed', async () => {
+      const completedNovel = {
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      }
+      ;(getNovel as jest.Mock).mockResolvedValue(completedNovel)
+
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Completed')).toBeInTheDocument()
+      })
+    })
+
+    it('shows "Unmark Completed" button when novel is completed', async () => {
+      const completedNovel = {
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      }
+      ;(getNovel as jest.Mock).mockResolvedValue(completedNovel)
+
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('nav-button-Unmark Completed')).toBeInTheDocument()
+      })
+    })
+
+    it('does not show "Unmark Completed" button when novel is not completed', async () => {
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('nav-button-Unmark Completed')).not.toBeInTheDocument()
+      })
+    })
+
+    it('does not show current chapter badge when novel is completed', async () => {
+      const completedNovel = {
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      }
+      ;(getNovel as jest.Mock).mockResolvedValue(completedNovel)
+
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Current:/)).not.toBeInTheDocument()
+      })
+    })
+
+    it('calls unmarkNovelCompleted and updates novel when button is clicked', async () => {
+      const user = userEvent.setup()
+      const completedNovel = {
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      }
+      ;(getNovel as jest.Mock)
+        .mockResolvedValueOnce(completedNovel) // Initial load - completed
+        .mockResolvedValueOnce(mockNovel) // After unmarking - not completed
+      ;(unmarkNovelCompleted as jest.Mock).mockResolvedValue(undefined)
+
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('nav-button-Unmark Completed')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByTestId('nav-button-Unmark Completed'))
+
+      await waitFor(() => {
+        expect(unmarkNovelCompleted).toHaveBeenCalledWith('test-novel')
+        expect(getNovel).toHaveBeenCalledWith('test-novel') // Called to refresh novel data
+      })
+    })
+
+    it('shows current chapter badge again after unmarking completed', async () => {
+      const user = userEvent.setup()
+      const completedNovel = {
+        ...mockNovel,
+        completedAt: '2024-01-15T10:30:00.000Z',
+      }
+      ;(getNovel as jest.Mock)
+        .mockResolvedValueOnce(completedNovel) // Initial load - completed
+        .mockResolvedValueOnce(mockNovel) // After unmarking - not completed
+      ;(unmarkNovelCompleted as jest.Mock).mockResolvedValue(undefined)
+
+      render(<NovelPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Completed')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByTestId('nav-button-Unmark Completed'))
+
+      await waitFor(() => {
+        // After unmarking, getNovel is called again and the component re-renders
+        expect(getNovel).toHaveBeenCalledTimes(2)
+      })
     })
   })
 })

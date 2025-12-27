@@ -15,6 +15,9 @@ import {
   getChapter,
   saveChapterSummary,
   exportNovel,
+  markNovelCompleted,
+  unmarkNovelCompleted,
+  deleteCurrentChapter,
 } from '../indexedDB';
 import { Novel } from '@/types';
 
@@ -304,6 +307,182 @@ describe('indexedDB', () => {
 
       expect(exported?.book.slug).toBe('test-novel');
       expect(exported?.chapters).toEqual([]);
+    });
+  });
+
+  describe('markNovelCompleted', () => {
+    it('marks a novel as completed with timestamp', async () => {
+      await saveNovel(mockNovel);
+
+      await markNovelCompleted('test-novel');
+
+      const novel = await getNovel('test-novel');
+      expect(novel?.completedAt).toBeDefined();
+      expect(novel?.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('does not throw when marking non-existent novel', async () => {
+      await expect(markNovelCompleted('non-existent')).resolves.not.toThrow();
+    });
+  });
+
+  describe('unmarkNovelCompleted', () => {
+    it('removes completedAt timestamp from novel', async () => {
+      await saveNovel(mockNovel);
+      await markNovelCompleted('test-novel');
+
+      await unmarkNovelCompleted('test-novel');
+
+      const novel = await getNovel('test-novel');
+      expect(novel?.completedAt).toBeUndefined();
+    });
+
+    it('does not throw when unmarking non-existent novel', async () => {
+      await expect(unmarkNovelCompleted('non-existent')).resolves.not.toThrow();
+    });
+
+    it('does not throw when unmarking novel that is not completed', async () => {
+      await saveNovel(mockNovel);
+      await expect(unmarkNovelCompleted('test-novel')).resolves.not.toThrow();
+    });
+  });
+
+  describe('deleteCurrentChapter', () => {
+    it('removes current chapter for novel', async () => {
+      await saveNovel(mockNovel);
+      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
+
+      await deleteCurrentChapter('test-novel');
+
+      const currentChapter = await getCurrentChapter('test-novel');
+      expect(currentChapter).toBeNull();
+    });
+
+    it('does not throw when no current chapter exists', async () => {
+      await saveNovel(mockNovel);
+      await expect(deleteCurrentChapter('test-novel')).resolves.not.toThrow();
+    });
+
+    it('does not throw when novel does not exist', async () => {
+      await expect(deleteCurrentChapter('non-existent')).resolves.not.toThrow();
+    });
+  });
+
+  describe('saveNovel preserves completion status', () => {
+    it('preserves completedAt when re-saving novel', async () => {
+      await saveNovel(mockNovel);
+      await markNovelCompleted('test-novel');
+
+      const updatedNovel: Novel = {
+        ...mockNovel,
+        book: { ...mockNovel.book, name: 'Updated Novel' },
+      };
+      await saveNovel(updatedNovel);
+
+      const novel = await getNovel('test-novel');
+      expect(novel?.book.name).toBe('Updated Novel');
+      expect(novel?.completedAt).toBeDefined();
+    });
+
+    it('preserves lastReadAt when re-saving novel', async () => {
+      await saveNovel(mockNovel);
+      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
+
+      const updatedNovel: Novel = {
+        ...mockNovel,
+        book: { ...mockNovel.book, name: 'Updated Novel' },
+      };
+      await saveNovel(updatedNovel);
+
+      const novel = await getNovel('test-novel');
+      expect(novel?.book.name).toBe('Updated Novel');
+      expect(novel?.lastReadAt).toBeDefined();
+    });
+
+    it('preserves both completedAt and lastReadAt when re-saving', async () => {
+      await saveNovel(mockNovel);
+      await saveCurrentChapter('test-novel', 'chap-1', 'Chapter 1');
+      await markNovelCompleted('test-novel');
+
+      const updatedNovel: Novel = {
+        ...mockNovel,
+        book: { ...mockNovel.book, name: 'Updated Novel' },
+      };
+      await saveNovel(updatedNovel);
+
+      const novel = await getNovel('test-novel');
+      expect(novel?.book.name).toBe('Updated Novel');
+      expect(novel?.lastReadAt).toBeDefined();
+      expect(novel?.completedAt).toBeDefined();
+    });
+  });
+
+  describe('Completion persistence', () => {
+    it('completion status persists across page refresh (simulated by new getNovel call)', async () => {
+      await saveNovel(mockNovel);
+      await markNovelCompleted('test-novel');
+
+      // First retrieval - right after marking
+      const novel1 = await getNovel('test-novel');
+      expect(novel1?.completedAt).toBeDefined();
+
+      // Second retrieval - simulates page refresh or component re-mount
+      const novel2 = await getNovel('test-novel');
+      expect(novel2?.completedAt).toBeDefined();
+      expect(novel2?.completedAt).toBe(novel1?.completedAt);
+    });
+
+    it('completion status survives novel re-import (saveNovel with new data)', async () => {
+      // Import novel initially
+      await saveNovel(mockNovel);
+      await markNovelCompleted('test-novel');
+
+      const originalCompletedAt = (await getNovel('test-novel'))?.completedAt;
+
+      // Re-import novel with updated metadata (simulating re-fetch from source)
+      const reImportedNovel: Novel = {
+        ...mockNovel,
+        book: {
+          ...mockNovel.book,
+          name: 'Updated Novel Name',
+          chapterCount: 5, // Updated chapter count
+        },
+        chapters: [
+          // Different chapter data
+          {
+            chapter: { name: 'Chapter 1', slug: 'chap-1', content: 'Updated content' },
+            nextChapter: undefined,
+            prevChapter: undefined,
+          },
+        ],
+      };
+      await saveNovel(reImportedNovel);
+
+      // Verify completion status is preserved
+      const retrievedNovel = await getNovel('test-novel');
+      expect(retrievedNovel?.book.name).toBe('Updated Novel Name');
+      expect(retrievedNovel?.book.chapterCount).toBe(5);
+      expect(retrievedNovel?.completedAt).toBe(originalCompletedAt);
+    });
+
+    it('exported novel includes completion status', async () => {
+      await saveNovel(mockNovel);
+      await markNovelCompleted('test-novel');
+
+      const exported = await exportNovel('test-novel');
+
+      expect(exported?.completedAt).toBeDefined();
+      expect(exported?.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('getAllNovels returns completed novels with completedAt field', async () => {
+      await saveNovel(mockNovel);
+      await markNovelCompleted('test-novel');
+
+      const novels = await getAllNovels();
+
+      expect(novels).toHaveLength(1);
+      expect(novels[0].completedAt).toBeDefined();
     });
   });
 });
