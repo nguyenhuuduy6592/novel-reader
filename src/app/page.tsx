@@ -26,6 +26,14 @@ export default function Home() {
           };
         })
       );
+
+      // Sort by lastReadAt (most recent first), novels without lastReadAt go to the end
+      novelsWithProgress.sort((a, b) => {
+        const aTime = a.novel.lastReadAt ? new Date(a.novel.lastReadAt).getTime() : 0;
+        const bTime = b.novel.lastReadAt ? new Date(b.novel.lastReadAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
       setNovels(novelsWithProgress);
     };
     loadNovels();

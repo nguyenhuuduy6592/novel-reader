@@ -7,6 +7,7 @@ export interface GenericResponse<T> {
 export interface Novel {
   book: NovelInfo
   chapters?: ChapterInfo[];
+  lastReadAt?: string;
 }
 
 export interface NovelInfo {

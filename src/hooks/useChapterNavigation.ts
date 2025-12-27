@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { ChapterInfo } from '@/types';
-import { getChapter, saveCurrentChapter, listChapters } from '@/lib/indexedDB';
+import { getChapter, saveCurrentChapter, listChapters, updateNovelLastRead } from '@/lib/indexedDB';
 
 interface UseChapterNavigationProps {
   slug: string;
@@ -28,6 +28,7 @@ export function useChapterNavigation({ slug, chapterSlug, onChapterChange }: Use
         onChapterChange?.(ch);
         currentChapterSlugRef.current = targetSlug;
         await saveCurrentChapter(slug, targetSlug, ch.chapter.name);
+        await updateNovelLastRead(slug);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         onChapterChange?.(null);

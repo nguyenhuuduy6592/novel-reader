@@ -47,6 +47,17 @@ export async function saveNovel(novel: Novel): Promise<void> {
   const novelsStore = tx.objectStore('novels');
   const novelToSave = { ...novel };
   delete novelToSave.chapters;
+
+  // Preserve lastReadAt if the novel already exists
+  const existingNovel = await new Promise<Novel | undefined>((resolve, reject) => {
+    const request = novelsStore.get(novel.book.slug);
+    request.onsuccess = () => resolve(request.result as Novel | undefined);
+    request.onerror = () => reject(request.error);
+  });
+  if (existingNovel?.lastReadAt) {
+    novelToSave.lastReadAt = existingNovel.lastReadAt;
+  }
+
   await new Promise<void>((resolve, reject) => {
     const request = novelsStore.put(novelToSave);
     request.onsuccess = () => resolve();
@@ -273,6 +284,31 @@ export async function saveChapterSummary(novelSlug: string, chapterSlug: string,
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
+
+  db.close();
+}
+
+export async function updateNovelLastRead(novelSlug: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const db = await openDB();
+  const tx = db.transaction(['novels'], 'readwrite');
+  const novelsStore = tx.objectStore('novels');
+
+  const novel = await new Promise<Novel | undefined>((resolve, reject) => {
+    const request = novelsStore.get(novelSlug);
+    request.onsuccess = () => resolve(request.result as Novel | undefined);
+    request.onerror = () => reject(request.error);
+  });
+
+  if (novel) {
+    novel.lastReadAt = new Date().toISOString();
+    await new Promise<void>((resolve, reject) => {
+      const request = novelsStore.put(novel);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
 
   db.close();
 }
