@@ -56,7 +56,6 @@ export default function NovelPage() {
       await removeNovel(slug);
       router.push('/');
     } catch (error) {
-      console.error('Failed to remove novel:', error);
       alert('Failed to remove novel. Please try again.');
       setIsDeleting(false);
     }
@@ -83,7 +82,6 @@ export default function NovelPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to export novel:', error);
       alert('Failed to export novel. Please try again.');
     }
   };

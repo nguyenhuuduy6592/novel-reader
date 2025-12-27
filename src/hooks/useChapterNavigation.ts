@@ -90,11 +90,6 @@ export function useChapterNavigation({ slug, chapterSlug, onChapterChange }: Use
       const storedChapterInfo = direction === 'next'
         ? currentChapter.nextChapter
         : currentChapter.prevChapter;
-      console.info('[Navigation] Fallback: stored slug not found, calculated by chapter number instead', {
-        direction,
-        stored: { slug: targetSlug, name: storedChapterInfo?.name },
-        loaded: { slug: fallbackSlug, name: fallbackChapter.chapter.name, number: targetNum },
-      });
       await loadChapter(fallbackSlug, fallbackChapter);
       const fallbackUrl = buildChapterUrl(fallbackSlug);
       window.history.pushState({ chapterSlug: fallbackSlug }, '', fallbackUrl);

@@ -19,7 +19,6 @@ export default function Page() {
       })
       .catch(err => {
         setError('Failed to fetch content');
-        console.error(err);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -29,8 +28,8 @@ export default function Page() {
       await navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy: ', err);
+    } catch {
+      alert('Failed to copy to clipboard');
     }
   };
 
