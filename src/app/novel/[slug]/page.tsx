@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, getChapter, saveChapterSummary, CurrentChapter, unmarkNovelCompleted } from '@/lib/indexedDB';
-import { Novel, ChapterInfo } from '@/types';
+import { Novel, ChapterInfo, BatchGenerationState, AdaptiveConcurrencyState, ChapterProcessResult, DEFAULT_MAX_CONCURRENCY, ZAI_PROVIDER_ID } from '@/types';
 import Image from 'next/image';
 import { HomeIcon, TrashIcon, DownloadIcon, SparklesIcon, RefreshIcon, CheckIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
@@ -34,21 +34,24 @@ export default function NovelPage() {
   const [batchSize, setBatchSize] = useState<number>(10);
 
   // Batch generation state
-  const [batchGeneration, setBatchGeneration] = useState<{
-    isGenerating: boolean;
-    currentIndex: number;
-    total: number;
-    error: string | null;
-    cancelled: boolean;
-  }>({
+  const [batchGeneration, setBatchGeneration] = useState<BatchGenerationState>({
     isGenerating: false,
     currentIndex: 0,
     total: 0,
     error: null,
     cancelled: false,
+    concurrency: 1,
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Adaptive concurrency state (Z.ai only)
+  const adaptiveConcurrencyRef = useRef<AdaptiveConcurrencyState>({
+    currentLevel: 1,
+    hasFailed: false,
+    maxConcurrency: DEFAULT_MAX_CONCURRENCY,
+    completedInBatch: 0,
+  });
 
   useEffect(() => {
     const loadNovel = async () => {
@@ -134,10 +137,257 @@ export default function NovelPage() {
       .slice(0, searchTerm ? undefined : batchSize);
   };
 
-  // Generate AI summaries for visible chapters
-  const generateBatchSummaries = useCallback(async (): Promise<void> => {
+  // Process a single chapter - returns result object instead of using callbacks
+  const processSingleChapter = useCallback(async (
+    chapterInfo: ChapterInfo,
+    signal: AbortSignal
+  ): Promise<ChapterProcessResult> => {
     const { provider, providers, summaryLength } = aiSettings;
     const { apiKey, model } = providers[provider];
+
+    const chapterSlug = chapterInfo.chapter.slug;
+    const chapterName = chapterInfo.chapter.name;
+
+    if (!chapterSlug) {
+      return {
+        success: false,
+        chapterSlug: null,
+        chapterName,
+        error: 'No chapter slug',
+      };
+    }
+
+    try {
+      const fullChapter = await getChapter(slug, chapterSlug);
+      if (!fullChapter) {
+        return {
+          success: false,
+          chapterSlug: null,
+          chapterName,
+          error: 'Chapter not found',
+        };
+      }
+
+      const summary = await generateSummary({
+        content: fullChapter.chapter.content,
+        apiKey,
+        provider,
+        model,
+        length: summaryLength,
+        signal,
+      });
+
+      await saveChapterSummary(slug, chapterSlug, summary);
+
+      return {
+        success: true,
+        chapterSlug,
+        chapterName,
+        summary,
+      };
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw err; // Re-throw abort to handle at batch level
+      }
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return {
+        success: false,
+        chapterSlug: null,
+        chapterName,
+        error: errorMessage,
+      };
+    }
+  }, [slug, aiSettings]);
+
+  // Wait for all active requests to finish using Promise-based approach
+  const createActiveRequestTracker = useCallback((): {
+    waitForAll: () => Promise<void>;
+    registerStart: () => void;
+    registerCompletion: () => void;
+    getCount: () => number;
+  } => {
+    let activeCount = 0;
+    let resolveAll: (() => void) | null = null;
+    let waitPromise: Promise<void> | null = null;
+
+    return {
+      waitForAll: () => {
+        if (activeCount === 0) return Promise.resolve();
+        if (!waitPromise) {
+          waitPromise = new Promise<void>(resolve => {
+            resolveAll = resolve;
+          });
+        }
+        return waitPromise;
+      },
+      registerStart: () => {
+        activeCount++;
+      },
+      registerCompletion: () => {
+        activeCount--;
+        if (activeCount === 0 && resolveAll) {
+          resolveAll();
+          resolveAll = null;
+          waitPromise = null;
+        }
+      },
+      getCount: () => activeCount,
+    };
+  }, []);
+
+  // Process chapters sequentially (for non-Z.ai providers)
+  const processChaptersSequentially = useCallback(async (
+    chaptersToProcess: ChapterInfo[],
+    abortSignal: AbortSignal
+  ): Promise<string[]> => {
+    const errors: string[] = [];
+    let completedCount = 0;
+
+    for (const chapterInfo of chaptersToProcess) {
+      if (abortSignal.aborted) break;
+
+      const result = await processSingleChapter(chapterInfo, abortSignal);
+
+      if (result.success && result.chapterSlug && result.summary) {
+        setChapters(prev =>
+          prev.map(c =>
+            c.chapter.slug === result.chapterSlug
+              ? { ...c, chapter: { ...c.chapter, aiSummary: result.summary } }
+              : c
+          )
+        );
+        completedCount++;
+      } else {
+        errors.push(`${result.chapterName}: ${result.error || 'Unknown error'}`);
+      }
+
+      setBatchGeneration(prev => ({
+        ...prev,
+        currentIndex: completedCount + errors.length,
+      }));
+    }
+
+    return errors;
+  }, [processSingleChapter]);
+
+  // Process chapters with adaptive concurrency (for Z.ai provider)
+  const processChaptersWithAdaptiveConcurrency = useCallback(async (
+    chaptersToProcess: ChapterInfo[],
+    abortSignal: AbortSignal
+  ): Promise<string[]> => {
+    const errors: string[] = [];
+    const state = adaptiveConcurrencyRef.current;
+    const processingQueue = [...chaptersToProcess];
+    const results = new Map<string, { summary: string; chapterInfo: ChapterInfo }>();
+
+    // Reset state
+    state.currentLevel = 1;
+    state.hasFailed = false;
+    state.completedInBatch = 0;
+
+    // Create tracker for active requests
+    const tracker = createActiveRequestTracker();
+
+    while (processingQueue.length > 0 && !abortSignal.aborted) {
+      // If we had a failure, wait for all active requests before continuing
+      if (state.hasFailed) {
+        await tracker.waitForAll();
+        if (abortSignal.aborted) break; // Check abort after waiting
+        state.currentLevel = 1;
+        state.hasFailed = false;
+        setBatchGeneration(prev => ({ ...prev, concurrency: 1 }));
+      }
+
+      // Determine how many to start based on current concurrency level
+      const concurrentBatchSize = Math.min(
+        state.currentLevel,
+        processingQueue.length
+      );
+
+      // Start concurrent requests
+      const batchPromises: Promise<void>[] = [];
+
+      for (let i = 0; i < concurrentBatchSize; i++) {
+        if (processingQueue.length === 0) break;
+        if (abortSignal.aborted) break;
+
+        const chapterInfo = processingQueue.shift()!;
+
+        const promise = (async () => {
+          tracker.registerStart(); // Register that this request is starting
+          try {
+            const result = await processSingleChapter(chapterInfo, abortSignal);
+
+            // Check abort before processing result
+            if (abortSignal.aborted) {
+              throw new Error('AbortError');
+            }
+
+            if (result.success && result.chapterSlug && result.summary) {
+              results.set(result.chapterSlug, { summary: result.summary, chapterInfo });
+              state.completedInBatch++;
+
+              // Update UI immediately on success
+              if (!abortSignal.aborted) {
+                setChapters(prev =>
+                  prev.map(c =>
+                    c.chapter.slug === result.chapterSlug
+                      ? { ...c, chapter: { ...c.chapter, aiSummary: result.summary } }
+                      : c
+                  )
+                );
+              }
+            } else {
+              errors.push(`${result.chapterName}: ${result.error || 'Unknown error'}`);
+              state.hasFailed = true;
+            }
+          } catch (err) {
+            if (err instanceof Error && err.name === 'AbortError') {
+              throw err;
+            }
+            if (err instanceof Error && err.message === 'AbortError') {
+              throw err;
+            }
+            errors.push(`${chapterInfo.chapter.name}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            state.hasFailed = true;
+          } finally {
+            tracker.registerCompletion();
+          }
+        })();
+
+        batchPromises.push(promise);
+      }
+
+      // Wait for this batch to complete
+      await Promise.allSettled(batchPromises);
+
+      // Check for abort after batch completes
+      if (abortSignal.aborted) break;
+
+      // Update completed count from successful results
+      const completedCount = results.size;
+      setBatchGeneration(prev => ({
+        ...prev,
+        currentIndex: completedCount + errors.length,
+      }));
+
+      // Adapt concurrency: increment on success, reset already handled by hasFailed flag
+      if (!state.hasFailed && state.completedInBatch > 0) {
+        state.currentLevel = Math.min(state.currentLevel + 1, state.maxConcurrency);
+        setBatchGeneration(prev => ({
+          ...prev,
+          concurrency: state.currentLevel,
+        }));
+      }
+    }
+
+    return errors;
+  }, [processSingleChapter, createActiveRequestTracker]);
+
+  // Generate AI summaries for visible chapters with adaptive concurrency (Z.ai only)
+  const generateBatchSummaries = useCallback(async (): Promise<void> => {
+    const { provider, providers } = aiSettings;
+    const { apiKey } = providers[provider];
 
     if (!apiKey) {
       setBatchGeneration(prev => ({
@@ -157,111 +407,63 @@ export default function NovelPage() {
       return;
     }
 
+    // Filter chapters that actually need processing
+    const chaptersToProcess = visibleChapters.filter(
+      c => c.chapter.slug && !c.chapter.aiSummary
+    );
+
+    if (chaptersToProcess.length === 0) {
+      setBatchGeneration({
+        isGenerating: false,
+        currentIndex: visibleChapters.length,
+        total: visibleChapters.length,
+        error: 'All chapters already have summaries.',
+        cancelled: false,
+        concurrency: 1,
+      });
+      return;
+    }
+
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
     setBatchGeneration({
       isGenerating: true,
       currentIndex: 0,
-      total: visibleChapters.length,
+      total: chaptersToProcess.length,
       error: null,
       cancelled: false,
+      concurrency: 1,
     });
 
-    const errors: string[] = [];
+    const useAdaptiveConcurrency = provider === ZAI_PROVIDER_ID;
 
-    for (let i = 0; i < visibleChapters.length; i++) {
-      if (abortController.signal.aborted) {
+    try {
+      const errors = useAdaptiveConcurrency
+        ? await processChaptersWithAdaptiveConcurrency(chaptersToProcess, abortController.signal)
+        : await processChaptersSequentially(chaptersToProcess, abortController.signal);
+
+      setBatchGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        error: errors.length > 0 ? errors.join('\n') : null,
+      }));
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
         setBatchGeneration(prev => ({
           ...prev,
           isGenerating: false,
           cancelled: true,
         }));
-        break;
-      }
-
-      const chapterInfo = visibleChapters[i];
-      const chapterSlug = chapterInfo.chapter.slug;
-
-      // Skip if no slug or already has summary
-      if (!chapterSlug || chapterInfo.chapter.aiSummary) {
+      } else {
         setBatchGeneration(prev => ({
           ...prev,
-          currentIndex: i + 1,
+          isGenerating: false,
+          error: err instanceof Error ? err.message : 'Unknown error',
         }));
-        continue;
       }
-
-      // Check abort before starting async work
-      if (abortController.signal.aborted) break;
-
-      try {
-        const fullChapter = await getChapter(slug, chapterSlug);
-
-        // Check abort after fetch
-        if (abortController.signal.aborted) break;
-
-        if (!fullChapter) {
-          errors.push(`Chapter ${chapterInfo.chapter.name} not found`);
-          setBatchGeneration(prev => ({
-            ...prev,
-            currentIndex: i + 1,
-          }));
-          continue;
-        }
-
-        const summary = await generateSummary({
-          content: fullChapter.chapter.content,
-          apiKey,
-          provider,
-          model,
-          length: summaryLength,
-          signal: abortController.signal,
-        });
-
-        // Check abort after API call
-        if (abortController.signal.aborted) break;
-
-        await saveChapterSummary(slug, chapterSlug, summary);
-
-        // Check abort after save
-        if (abortController.signal.aborted) break;
-
-        setChapters(prevChapters =>
-          prevChapters.map(c =>
-            c.chapter.slug === chapterSlug
-              ? {
-                  ...c,
-                  chapter: {
-                    ...c.chapter,
-                    aiSummary: summary,
-                  },
-                }
-              : c
-          )
-        );
-      } catch (err) {
-        // Check if error was due to abort
-        if (abortController.signal.aborted) break;
-
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        errors.push(`${chapterInfo.chapter.name}: ${errorMessage}`);
-      }
-
-      setBatchGeneration(prev => ({
-        ...prev,
-        currentIndex: i + 1,
-      }));
     }
-
-    abortControllerRef.current = null;
-
-    setBatchGeneration(prev => ({
-      ...prev,
-      isGenerating: false,
-      error: errors.length > 0 ? errors.join('\n') : null,
-    }));
-  }, [slug, aiSettings, chapters, searchTerm, batchSize]);
+  }, [slug, aiSettings, chapters, searchTerm, batchSize, processChaptersWithAdaptiveConcurrency, processChaptersSequentially]);
 
   // Cancel batch generation
   const cancelBatchGeneration = useCallback((): void => {
@@ -492,12 +694,19 @@ export default function NovelPage() {
 
             {/* Progress during generation */}
             {batchGeneration.isGenerating && (
-              <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
+              <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-purple-800 font-medium">
-                    Generating summaries: {batchGeneration.currentIndex}/{batchGeneration.total}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-purple-800 font-medium">
+                      Generating summaries: {batchGeneration.currentIndex}/{batchGeneration.total}
+                    </span>
+                    {aiSettings.provider === ZAI_PROVIDER_ID && (
+                      <span className="text-purple-600 text-sm">
+                        Concurrency: {batchGeneration.concurrency}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={cancelBatchGeneration}

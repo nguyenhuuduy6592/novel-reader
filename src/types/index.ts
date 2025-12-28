@@ -4,6 +4,35 @@ export interface GenericResponse<T> {
   pageProps: T;
 }
 
+// Batch summary generation types
+export interface BatchGenerationState {
+  isGenerating: boolean;
+  currentIndex: number;
+  total: number;
+  error: string | null;
+  cancelled: boolean;
+  concurrency: number;
+}
+
+export interface AdaptiveConcurrencyState {
+  currentLevel: number;
+  hasFailed: boolean;
+  maxConcurrency: number;
+  completedInBatch: number;
+}
+
+export interface ChapterProcessResult {
+  success: boolean;
+  chapterSlug: string | null;
+  chapterName: string;
+  summary?: string;
+  error?: string;
+}
+
+// Constants
+export const DEFAULT_MAX_CONCURRENCY = 10;
+export const ZAI_PROVIDER_ID = 'zai' as const;
+
 export interface Novel {
   book: NovelInfo
   chapters?: ChapterInfo[];
