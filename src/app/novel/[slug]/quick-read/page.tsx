@@ -221,6 +221,7 @@ export default function QuickReadPage() {
     : null
 
   return (
+    <>
     <PageLayout maxWidth="max-w-3xl" padding="py-4 sm:py-8 sm:px-4">
       {/* Header Navigation */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -281,7 +282,7 @@ export default function QuickReadPage() {
       </div>
 
       {/* Chapter List */}
-      <div className="space-y-4">
+      <div className="space-y-4 pb-20">
         {chapters.map((chapterInfo, index) => (
           <ChapterSummaryCard
             key={chapterInfo.chapter.slug}
@@ -294,11 +295,50 @@ export default function QuickReadPage() {
       </div>
 
       {/* Footer Info */}
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center pb-20">
         <p className="text-gray-500 text-sm">
           Scroll to track your reading progress • Click chapter to read full content
         </p>
       </div>
     </PageLayout>
+
+    {/* Fixed Bottom Navigation */}
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-10">
+      <div className="flex divide-x divide-gray-200">
+        <Link
+          href="/"
+          className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <HomeIcon />
+          Home
+        </Link>
+        <Link
+          href={`/novel/${slug}`}
+          className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <BookOpenIcon />
+          Novel
+        </Link>
+      </div>
+    </div>
+
+    {/* Desktop Bottom Navigation */}
+    <div className="hidden md:flex fixed bottom-4 left-1/2 -translate-x-1/2 gap-2 z-10">
+      <NavButton
+        icon={<HomeIcon />}
+        label="Home"
+        onClick={() => router.push('/')}
+        ariaLabel="Go to home"
+        className="shadow-lg"
+      />
+      <NavButton
+        icon={<BookOpenIcon />}
+        label="Novel"
+        onClick={() => router.push(`/novel/${slug}`)}
+        ariaLabel="Back to novel"
+        className="shadow-lg"
+      />
+    </div>
+  </>
   );
 }
