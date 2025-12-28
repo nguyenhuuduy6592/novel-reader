@@ -25,15 +25,7 @@
       "Bash(pwd)",
       "mcp__playwright:*",
       "WebSearch",
-      "Bash(npm test -- --testPathPattern=\"indexedDB\" --passWithNoTests)",
-      "Bash(npm test -- --testPathPatterns=\"indexedDB\" --passWithNoTests)",
-      "Bash(npm test)",
-      "Bash(npm test -- src/app/page.test.tsx)",
-      "Bash(npm test -- src/components/__tests__/ConfirmDialog.test.tsx)",
-      "Bash(npm test -- src/hooks/__tests__/useChapterNavigation.test.ts)",
-      "Bash(npm test -- src/app/novel/[slug]/chapter/[chapterSlug]/page.test.tsx)",
-      "Bash(npm test -- --testPathPattern=\"chapter.*page\" --passWithNoTests)",
-      "Bash(npm test -- --testPathPatterns=\"chapter\" --passWithNoTests)",
+      "Bash(npm test)"
     ]
   }
 }
