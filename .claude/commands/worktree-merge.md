@@ -6,13 +6,9 @@ Git worktree merge command for merging a feature branch back into main.
 
 When this slash command is invoked, execute the following commands in order:
 
-1. Kill any node processes running in the worktree (Windows):
+1. Kill any node processes running in the worktree:
    ```bash
-   powershell -NoProfile -Command "Get-WmiObject Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*<worktree-path>*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
-   ```
-   Or on Unix-like systems:
-   ```bash
-   pkill -f "node.*<worktree-path>" 2>/dev/null || true
+   powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*<worktree-path>*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
    ```
 
 2. Switch to main branch:
