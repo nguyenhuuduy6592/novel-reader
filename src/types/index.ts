@@ -48,6 +48,7 @@ export interface ReadingThemeConfig {
 export interface CurrentChapter {
   novelSlug: string;
   chapterSlug: string;
+  chapterName?: string;
 }
 
 export interface AiProviderConfig {

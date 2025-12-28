@@ -6,10 +6,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { getNovel, getCurrentChapter, listChapters, removeNovel, exportNovel, getChapter, saveChapterSummary, CurrentChapter, unmarkNovelCompleted } from '@/lib/indexedDB';
 import { Novel, ChapterInfo } from '@/types';
 import Image from 'next/image';
-import { HomeIcon, TrashIcon, DownloadIcon, SparklesIcon, RefreshIcon, CheckIcon } from '@/lib/icons';
+import { HomeIcon, TrashIcon, DownloadIcon, SparklesIcon, RefreshIcon, CheckIcon, BookOpenIcon } from '@/lib/icons';
 import PageLayout from '@/components/PageLayout';
 import { NavButton } from '@/components/NavButton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { AiSummaryBadge } from '@/components/AiSummaryBadge';
 import { useAiSettings } from '@/hooks/useAiSettings';
 import { generateSummary } from '@/lib/aiSummary';
 import { AI_PROVIDERS } from '@/constants/ai';
@@ -387,6 +388,15 @@ export default function NovelPage() {
               >
                 {currentChapter?.chapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
               </Link>
+              <Link
+                href={`/novel/${slug}/quick-read`}
+                aria-label={`Quick read ${novel.book.name} - view all chapter summaries`}
+                title="Read all chapters with AI summaries in a scrollable view"
+                className="flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus:bg-indigo-700 cursor-pointer"
+              >
+                <BookOpenIcon />
+                Quick Read
+              </Link>
               {novel.completedAt && (
                 <NavButton
                   icon={<RefreshIcon />}
@@ -549,13 +559,7 @@ export default function NovelPage() {
                 >
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {chapterInfo.chapter.aiSummary ? (
-                        <span className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold" title="AI summary available">
-                          AI
-                        </span>
-                      ) : (
-                        <span className="flex-shrink-0 inline-block w-5 h-5"></span>
-                      )}
+                      <AiSummaryBadge hasSummary={!!chapterInfo.chapter.aiSummary} showPlaceholder />
                       <span className="font-medium truncate">Ch {actualIndex + 1}: {chapterInfo.chapter.name}</span>
                     </div>
                     <span className="text-gray-500 text-xs flex-shrink-0">→</span>
