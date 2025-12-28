@@ -28,29 +28,6 @@ To learn more about Next.js, take a look at the following resources:
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Docker Deployment
-
-### Using Docker Compose (Recommended for Local Development)
-
-For development with hot reloading:
-
-```bash
-docker-compose --profile dev up -d
-```
-
-### Docker Configuration
-
-The project includes:
-- `Dockerfile.dev` - Development environment with hot reloading using Node.js 22
-- `docker-compose.yml` - Orchestration for development environment
-- `.dockerignore` - Optimizes build context by excluding unnecessary files
-
-The application will be available at [http://localhost:3000](http://localhost:3000) when running in Docker.
-
-### Node.js Version
-
-This project uses Node.js 22 in Docker to ensure compatibility with Next.js 16.1.0, which requires Node.js version >=20.9.0.
-
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

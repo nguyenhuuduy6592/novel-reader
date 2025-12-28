@@ -199,7 +199,6 @@ Remote images from `static.truyenchucv.org` are allowed in `next.config.ts`.
 
 ### Build Configuration
 
-- **Output mode**: `standalone` for Docker/containerized deployments
 - **Turbopack**: Enabled for faster development builds
 
 ### User Experience Features

@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  output: 'standalone',
   turbopack: {},
 }
 
