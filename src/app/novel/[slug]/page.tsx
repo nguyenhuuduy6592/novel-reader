@@ -759,7 +759,7 @@ export default function NovelPage() {
                 .filter((chapterInfo) =>
                   chapterInfo.chapter.name.toLowerCase().includes(searchTerm.toLowerCase())
                 )
-                .slice(0, searchTerm ? undefined : 10)
+                .slice(0, searchTerm ? undefined : batchSize)
                 .map((chapterInfo) => {
                   const actualIndex = chapters.findIndex(c => c.chapter.slug === chapterInfo.chapter.slug) ?? 0;
                   return (
