@@ -12,8 +12,11 @@ import { NavButton } from '@/components/NavButton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { AiSummaryBadge } from '@/components/AiSummaryBadge';
 import { useAiSettings } from '@/hooks/useAiSettings';
+import { useBatchTimer } from '@/hooks/useBatchTimer';
 import { generateSummary } from '@/lib/aiSummary';
 import { AI_PROVIDERS } from '@/constants/ai';
+import { BatchProgress } from '@/components/BatchProgress';
+import { BatchStats } from '@/components/BatchStats';
 
 export default function NovelPage() {
   const params = useParams();
@@ -45,6 +48,9 @@ export default function NovelPage() {
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Batch timer hook for tracking elapsed time and statistics
+  const batchTimer = useBatchTimer();
 
   // Adaptive concurrency state (Z.ai only)
   const adaptiveConcurrencyRef = useRef<AdaptiveConcurrencyState>({
@@ -169,6 +175,9 @@ export default function NovelPage() {
         };
       }
 
+      // Start timing this chapter
+      batchTimer.startChapter(chapterSlug);
+
       const summary = await generateSummary({
         content: fullChapter.chapter.content,
         apiKey,
@@ -198,7 +207,7 @@ export default function NovelPage() {
         error: errorMessage,
       };
     }
-  }, [slug, aiSettings]);
+  }, [slug, aiSettings, batchTimer]);
 
   // Wait for all active requests to finish using Promise-based approach
   const createActiveRequestTracker = useCallback((): {
@@ -258,9 +267,16 @@ export default function NovelPage() {
           )
         );
         completedCount++;
+        // Update success count in timer
+        batchTimer.updateSuccess(completedCount);
+        // Record the time this chapter completed
+        batchTimer.recordSuccessTime(result.chapterSlug);
       } else {
         errors.push(`${result.chapterName}: ${result.error || 'Unknown error'}`);
       }
+
+      // Update completed count in timer
+      batchTimer.updateCompleted(completedCount + errors.length);
 
       setBatchGeneration(prev => ({
         ...prev,
@@ -269,7 +285,7 @@ export default function NovelPage() {
     }
 
     return errors;
-  }, [processSingleChapter]);
+  }, [processSingleChapter, batchTimer]);
 
   // Process chapters with adaptive concurrency (for Z.ai provider)
   const processChaptersWithAdaptiveConcurrency = useCallback(async (
@@ -328,6 +344,15 @@ export default function NovelPage() {
               results.set(result.chapterSlug, { summary: result.summary, chapterInfo });
               state.completedInBatch++;
 
+              // Update success count in timer
+              batchTimer.updateSuccess(results.size);
+
+              // Update completed count in timer
+              batchTimer.updateCompleted(results.size + errors.length);
+
+              // Record the time this chapter completed
+              batchTimer.recordSuccessTime(result.chapterSlug);
+
               // Update UI immediately on success
               if (!abortSignal.aborted) {
                 setChapters(prev =>
@@ -358,9 +383,6 @@ export default function NovelPage() {
             if (err instanceof Error && err.name === 'AbortError') {
               throw err;
             }
-            if (err instanceof Error && err.message === 'AbortError') {
-              throw err;
-            }
             errors.push(`${chapterInfo.chapter.name}: ${err instanceof Error ? err.message : 'Unknown error'}`);
             state.hasFailed = true;
           } finally {
@@ -380,15 +402,20 @@ export default function NovelPage() {
       // Adapt concurrency: increment on success
       if (!state.hasFailed && state.completedInBatch > 0) {
         state.currentLevel = Math.min(state.currentLevel + 1, state.maxConcurrency);
+        const newConcurrency = state.currentLevel;
+
+        // Update max concurrency in timer
+        batchTimer.updateMaxConcurrency(newConcurrency);
+
         setBatchGeneration(prev => ({
           ...prev,
-          concurrency: state.currentLevel,
+          concurrency: newConcurrency,
         }));
       }
     }
 
     return errors;
-  }, [processSingleChapter, createActiveRequestTracker]);
+  }, [processSingleChapter, createActiveRequestTracker, batchTimer]);
 
   // Generate AI summaries for visible chapters with adaptive concurrency (Z.ai only)
   const generateBatchSummaries = useCallback(async (): Promise<void> => {
@@ -444,10 +471,16 @@ export default function NovelPage() {
 
     const useAdaptiveConcurrency = provider === ZAI_PROVIDER_ID;
 
+    // Start the batch timer
+    batchTimer.start(chaptersToProcess.length, 1);
+
     try {
       const errors = useAdaptiveConcurrency
         ? await processChaptersWithAdaptiveConcurrency(chaptersToProcess, abortController.signal)
         : await processChaptersSequentially(chaptersToProcess, abortController.signal);
+
+      // Stop the timer and calculate final stats
+      batchTimer.stop();
 
       setBatchGeneration(prev => ({
         ...prev,
@@ -456,12 +489,15 @@ export default function NovelPage() {
       }));
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
+        // Stop the timer and capture stats for cancellation
+        batchTimer.stop();
         setBatchGeneration(prev => ({
           ...prev,
           isGenerating: false,
           cancelled: true,
         }));
       } else {
+        batchTimer.stop();
         setBatchGeneration(prev => ({
           ...prev,
           isGenerating: false,
@@ -469,7 +505,7 @@ export default function NovelPage() {
         }));
       }
     }
-  }, [slug, aiSettings, chapters, searchTerm, batchSize, processChaptersWithAdaptiveConcurrency, processChaptersSequentially]);
+  }, [slug, aiSettings, chapters, searchTerm, batchSize, processChaptersWithAdaptiveConcurrency, processChaptersSequentially, batchTimer]);
 
   // Cancel batch generation
   const cancelBatchGeneration = useCallback((): void => {
@@ -711,34 +747,20 @@ export default function NovelPage() {
 
             {/* Progress during generation */}
             {batchGeneration.isGenerating && (
-              <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                  <div className="flex flex-col">
-                    <span className="text-purple-800 font-medium">
-                      Generating summaries: {batchGeneration.currentIndex}/{batchGeneration.total}
-                    </span>
-                    {aiSettings.provider === ZAI_PROVIDER_ID && (
-                      <span className="text-purple-600 text-sm">
-                        Concurrency: {batchGeneration.concurrency}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={cancelBatchGeneration}
-                  className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
+              <BatchProgress
+                timerState={batchTimer.state}
+                isZaiProvider={aiSettings.provider === ZAI_PROVIDER_ID}
+                onCancel={cancelBatchGeneration}
+              />
             )}
 
             {/* Cancellation message */}
-            {!batchGeneration.isGenerating && batchGeneration.cancelled && (
-              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800">Generation cancelled at {batchGeneration.currentIndex}/{batchGeneration.total}</p>
-              </div>
+            {!batchGeneration.isGenerating && batchGeneration.cancelled && batchTimer.stats && (
+              <BatchStats
+                stats={batchTimer.stats}
+                totalCount={batchGeneration.total}
+                variant="cancelled"
+              />
             )}
 
             {/* Error summary */}
@@ -750,12 +772,12 @@ export default function NovelPage() {
             )}
 
             {/* Success message */}
-            {!batchGeneration.isGenerating && !batchGeneration.error && batchGeneration.total > 0 && !batchGeneration.cancelled && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800">
-                  Successfully generated {batchGeneration.currentIndex}/{batchGeneration.total} summaries!
-                </p>
-              </div>
+            {!batchGeneration.isGenerating && !batchGeneration.error && batchGeneration.total > 0 && !batchGeneration.cancelled && batchTimer.stats && (
+              <BatchStats
+                stats={batchTimer.stats}
+                totalCount={batchGeneration.total}
+                variant="success"
+              />
             )}
 
             <h2 className="text-lg font-bold mb-2">Chapters</h2>
