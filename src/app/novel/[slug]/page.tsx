@@ -558,6 +558,8 @@ export default function NovelPage() {
               width={200}
               height={300}
               className="w-48 h-72 object-cover rounded-lg shadow-md hover:opacity-90 transition-opacity duration-200"
+              priority
+              loading="eager"
             />
           </div>
           <div className="flex-1 min-w-0">

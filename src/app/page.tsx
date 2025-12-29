@@ -85,7 +85,8 @@ export default function Home() {
                         width={100}
                         height={150}
                         className="w-full object-cover rounded-md hover:opacity-90 transition-opacity duration-200 mb-2"
-                        priority={true}
+                        priority
+                        loading="eager"
                       />
                       <h3 className="font-semibold text-lg mb-2 hover:underline break-words">{novel.book.name}</h3>
                     </Link>
