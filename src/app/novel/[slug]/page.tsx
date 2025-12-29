@@ -337,10 +337,22 @@ export default function NovelPage() {
                       : c
                   )
                 );
+
+                // Increment progress counter immediately
+                setBatchGeneration(prev => ({
+                  ...prev,
+                  currentIndex: prev.currentIndex + 1,
+                }));
               }
             } else {
               errors.push(`${result.chapterName}: ${result.error || 'Unknown error'}`);
               state.hasFailed = true;
+
+              // Increment progress counter for failed chapters
+              setBatchGeneration(prev => ({
+                ...prev,
+                currentIndex: prev.currentIndex + 1,
+              }));
             }
           } catch (err) {
             if (err instanceof Error && err.name === 'AbortError') {
@@ -365,14 +377,7 @@ export default function NovelPage() {
       // Check for abort after batch completes
       if (abortSignal.aborted) break;
 
-      // Update completed count from successful results
-      const completedCount = results.size;
-      setBatchGeneration(prev => ({
-        ...prev,
-        currentIndex: completedCount + errors.length,
-      }));
-
-      // Adapt concurrency: increment on success, reset already handled by hasFailed flag
+      // Adapt concurrency: increment on success
       if (!state.hasFailed && state.completedInBatch > 0) {
         state.currentLevel = Math.min(state.currentLevel + 1, state.maxConcurrency);
         setBatchGeneration(prev => ({
