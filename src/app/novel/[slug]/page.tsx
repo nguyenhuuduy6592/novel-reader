@@ -176,7 +176,7 @@ export default function NovelPage() {
       }
 
       // Start timing this chapter
-      batchTimer.startChapter();
+      batchTimer.startChapter(chapterSlug);
 
       const summary = await generateSummary({
         content: fullChapter.chapter.content,
@@ -270,7 +270,7 @@ export default function NovelPage() {
         // Update success count in timer
         batchTimer.updateSuccess(completedCount);
         // Record the time this chapter completed
-        batchTimer.recordSuccessTime();
+        batchTimer.recordSuccessTime(result.chapterSlug);
       } else {
         errors.push(`${result.chapterName}: ${result.error || 'Unknown error'}`);
       }
@@ -351,7 +351,7 @@ export default function NovelPage() {
               batchTimer.updateCompleted(results.size + errors.length);
 
               // Record the time this chapter completed
-              batchTimer.recordSuccessTime();
+              batchTimer.recordSuccessTime(result.chapterSlug);
 
               // Update UI immediately on success
               if (!abortSignal.aborted) {

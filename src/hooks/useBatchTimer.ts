@@ -8,14 +8,15 @@ import { calculateAverageTime } from '@/lib/timeUtils'
  * - Elapsed time updates every second while running
  * - Tracks completed count and max concurrency
  * - Records individual chapter durations (start to finish) for precise average
+ * - Thread-safe: handles concurrent chapter processing without race conditions
  * - Calculates final statistics (total time, average per chapter)
  *
  * Usage:
  * ```tsx
  * const batchTimer = useBatchTimer()
  * batchTimer.start(totalCount)  // Begin timing
- * batchTimer.startChapter()  // Call before starting a chapter's API call
- * batchTimer.recordSuccessTime()  // Call after chapter completes successfully
+ * batchTimer.startChapter(chapterSlug)  // Call before starting a chapter's API call
+ * batchTimer.recordSuccessTime(chapterSlug)  // Call after chapter completes successfully
  * batchTimer.stop()  // Calculate final stats
  * ```
  */
@@ -45,8 +46,8 @@ export interface UseBatchTimerReturn {
   reset: () => void
   updateCompleted: (count: number) => void
   updateSuccess: (count: number) => void
-  startChapter: () => void
-  recordSuccessTime: () => void
+  startChapter: (chapterId: string) => void
+  recordSuccessTime: (chapterId: string) => void
   updateMaxConcurrency: (level: number) => void
 }
 
@@ -57,7 +58,7 @@ export interface UseBatchTimerReturn {
 export function useBatchTimer(): UseBatchTimerReturn {
   const startTimeRef = useRef<number | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const chapterStartRef = useRef<number | null>(null)  // Tracks when current chapter started
+  const chapterStartsRef = useRef<Map<string, number>>(new Map())  // Tracks start times for each concurrent chapter
 
   const [state, setState] = useState<BatchTimerState>({
     isRunning: false,
@@ -144,7 +145,7 @@ export function useBatchTimer(): UseBatchTimerReturn {
 
   const reset = useCallback(() => {
     startTimeRef.current = null
-    chapterStartRef.current = null
+    chapterStartsRef.current.clear()
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -170,21 +171,23 @@ export function useBatchTimer(): UseBatchTimerReturn {
   }, [])
 
   // Call this before starting to process a chapter
-  const startChapter = useCallback(() => {
-    chapterStartRef.current = Date.now()
+  const startChapter = useCallback((chapterId: string) => {
+    chapterStartsRef.current.set(chapterId, Date.now())
   }, [])
 
   // Call this after chapter completes successfully
-  const recordSuccessTime = useCallback(() => {
+  const recordSuccessTime = useCallback((chapterId: string) => {
     const now = Date.now()
-    const chapterStart = chapterStartRef.current
+    const chapterStart = chapterStartsRef.current.get(chapterId)
 
-    if (chapterStart !== null) {
+    if (chapterStart !== undefined) {
       const duration = (now - chapterStart) / 1000
       setState(prev => ({
         ...prev,
         chapterDurations: [...prev.chapterDurations, duration],
       }))
+      // Clean up the entry after recording
+      chapterStartsRef.current.delete(chapterId)
     }
   }, [])
 
