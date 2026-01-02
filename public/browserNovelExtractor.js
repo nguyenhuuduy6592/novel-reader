@@ -31,6 +31,25 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Helper function to fetch with HTML fallback
+async function fetchWithFallback(jsonUrl, htmlUrl, description) {
+  const response = await fetch(jsonUrl);
+  
+  if (!response.ok) {
+    console.warn(`Failed to fetch JSON for ${description} (status: ${response.status}). Attempting HTML extraction.`);
+    const htmlResponse = await fetch(htmlUrl);
+    const htmlText = await htmlResponse.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+    const script = doc.getElementById('__NEXT_DATA__');
+    const htmlData = JSON.parse(script.innerHTML);
+    // Normalize data structure: HTML returns { props: { pageProps } }, JSON returns { pageProps }
+    return htmlData.props;
+  }
+  
+  return await response.json();
+}
+
 // Fetch chapter content with retry logic
 async function fetchChapterWithRetry(slug, chapter, retryCount = MAX_RETRIES) {
   const apiUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}/${chapter.slug}.html.json?slug=${slug}.html&slug=${chapter.slug}.html`;
@@ -109,11 +128,12 @@ async function fetchChapterWithRetry(slug, chapter, retryCount = MAX_RETRIES) {
 async function extractNovel(novelUrl, options = {}) {
   const { resume = true, clearExisting = false } = options;
   const slug = novelUrl.split('/').pop().replace('.html', '');
-  novelUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}.html.json?slug=${slug}.html`
+  const jsonUrl = `https://truyenchucv.org/_next/data/FMM6MiVR9Ra-gG0tnHXck/truyen/${slug}.html.json?slug=${slug}.html`;
+  const htmlUrl = `https://truyenchucv.org/truyen/${slug}.html`;
 
-  // Fetch novel info and initial chapter list
-  const response = await fetch(novelUrl);
-  const data = await response.json();
+  // Fetch novel info and initial chapter list with HTML fallback
+  const data = await fetchWithFallback(jsonUrl, htmlUrl, `novel: ${slug}`);
+
   let novel = {
     book: {
       bookId: data.pageProps.book.bookId,
@@ -134,9 +154,10 @@ async function extractNovel(novelUrl, options = {}) {
   // Handle pagination for chapter list
   const totalPages = Math.ceil(novel.book.chapterCount / 50);
   for (let page = 2; page <= totalPages; page++) {
-    const pageUrl = `${novelUrl}&page=${page}`;
-    const pageResponse = await fetch(pageUrl);
-    const pageData = await pageResponse.json();
+    const pageJsonUrl = `${jsonUrl}&page=${page}`;
+    const pageHtmlUrl = `${htmlUrl}?page=${page}`;
+    const pageData = await fetchWithFallback(pageJsonUrl, pageHtmlUrl, `novel: ${slug} (page ${page})`);
+
     for (const chapter of pageData.pageProps.chapterList || []) {
       chapterSlugs.push(chapter);
     }
