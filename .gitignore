@@ -45,3 +45,9 @@ nul
 
 # Git worktree
 .tree
+
+# Auto Claude data directory
+.auto-claude/
+
+# Novel files directory
+truyen/
