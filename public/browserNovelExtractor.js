@@ -108,15 +108,16 @@ async function fetchChapterWithRetry(slug, chapter, retryCount = MAX_RETRIES) {
     } catch (error) {
       if (attempt === retryCount) {
         console.error(`Failed to fetch chapter "${chapter.name}" (${chapter.slug}) after ${retryCount + 1} attempts:`, error.message);
-        // Return chapter with no content instead of throwing
+        // Return chapter with no content and failed flag
         return {
           chapter: {
             name: chapter.name,
             slug: chapter.slug,
-            content: 'Failed to load content',
+            content: '',
           },
           nextChapter: null,
           prevChapter: null,
+          failed: true,
         };
       }
       console.warn(`Retry ${attempt + 1}/${retryCount} for chapter "${chapter.name}" (${chapter.slug}): ${error.message}`);
@@ -188,6 +189,16 @@ async function extractNovel(novelUrl, options = {}) {
     }
   }
 
+  // Track success and failed counts
+  let successCount = 0;
+  let failedCount = 0;
+
+  // Count existing successful/failed chapters if resuming
+  if (chapters.length > 0) {
+    successCount = chapters.filter(ch => !ch.failed).length;
+    failedCount = chapters.filter(ch => ch.failed).length;
+  }
+
   // Fetch content for each chapter in batches
   for (let i = startIndex; i < chapterSlugs.length; i += BATCH_SIZE) {
     const batch = chapterSlugs.slice(i, i + BATCH_SIZE);
@@ -196,6 +207,15 @@ async function extractNovel(novelUrl, options = {}) {
     const results = await Promise.all(
       batch.map(chapter => fetchChapterWithRetry(slug, chapter))
     );
+
+    // Count successes and failures in this batch
+    results.forEach(result => {
+      if (result.failed) {
+        failedCount++;
+      } else {
+        successCount++;
+      }
+    });
 
     chapters.push(...results);
 
@@ -211,6 +231,14 @@ async function extractNovel(novelUrl, options = {}) {
 
     await sleep(100); // Rate limiting
   }
+
+  // Print summary
+  console.log(`\n========== Download Summary ==========`);
+  console.log(`Novel: ${novel.book.name}`);
+  console.log(`Total chapters: ${chapterSlugs.length}`);
+  console.log(`Successfully downloaded: ${successCount}`);
+  console.log(`Failed: ${failedCount}`);
+  console.log(`=====================================\n`);
 
   // Clear progress after successful completion
   if (resume) {
