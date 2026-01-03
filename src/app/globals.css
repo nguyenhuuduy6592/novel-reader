@@ -55,9 +55,6 @@
   font-size: var(--reading-font-size, 16px);
   line-height: var(--reading-line-height, 1.6);
   padding: var(--reading-padding, var(--padding-normal));
-  max-width: 100%;
-  width: 100%;
-  margin: 0;
 }
 
 @media (max-width: 768px) {

@@ -222,123 +222,124 @@ export default function QuickReadPage() {
 
   return (
     <>
-    <PageLayout maxWidth="max-w-3xl" padding="py-4 sm:py-8 sm:px-4">
-      {/* Header Navigation */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-wrap gap-2">
-          <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
+      <PageLayout maxWidth="max-w-3xl" padding="py-4 sm:py-8 sm:px-4">
+        {/* Header Navigation */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            <Link href="/" className="text-blue-500 hover:underline flex items-center gap-1 px-2 py-1">
+              <HomeIcon />
+              Home
+            </Link>
+            <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline flex items-center gap-1">
+              <ChevronLeftIcon />
+              Novel
+            </Link>
+          </div>
+          <div className="flex gap-2 items-center">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <BookOpenIcon />
+              Quick Read
+            </h1>
+            <NavButton
+              icon={<ThemeIcon />}
+              onClick={() => setShowSettings(!showSettings)}
+              ariaLabel={showSettings ? 'Hide settings' : 'Show settings'}
+              ariaExpanded={showSettings}
+              ariaControls="settings-panel"
+            />
+          </div>
+        </div>
+
+        {showSettings && (
+          <SettingsPanel
+            themeConfig={themeConfig}
+            onThemeConfigChange={setThemeConfig}
+            aiSettings={aiSettings}
+            onAiSettingsChange={setAiSettings}
+            onProviderConfigUpdate={updateProviderConfig}
+          />
+        )}
+
+        {/* Novel Info Card */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+          <h2 className="font-bold text-lg text-blue-900">{novel.book.name}</h2>
+          <p className="text-blue-700 text-sm">by {novel.book.author.name}</p>
+          <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-blue-600 text-sm">
+              {visibleChapterSlug ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  Reading: Ch {visibleChapterIndex}
+                </span>
+              ) : (
+                <span className="text-gray-500">Start scrolling to track progress</span>
+              )}
+            </p>
+            <p className="text-blue-600 text-sm">
+              {novel.book.chapterCount} chapters • {chapters.filter((c) => c.chapter.aiSummary).length} with AI summaries
+            </p>
+          </div>
+        </div>
+
+        {/* Chapter List */}
+        <div className="space-y-4 pb-20">
+          {chapters.map((chapterInfo, index) => (
+            <ChapterSummaryCard
+              key={chapterInfo.chapter.slug}
+              slug={slug}
+              chapter={chapterInfo}
+              isActive={visibleChapterSlug === chapterInfo.chapter.slug}
+              index={index}
+              themeConfig={themeConfig}
+            />
+          ))}
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-8 text-center pb-20">
+          <p className="text-gray-500 text-sm">
+            Scroll to track your reading progress • Click chapter to read full content
+          </p>
+        </div>
+      </PageLayout>
+
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-10">
+        <div className="flex divide-x divide-gray-200">
+          <Link
+            href="/"
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
             <HomeIcon />
             Home
           </Link>
-          <Link href={`/novel/${slug}`} className="text-blue-500 hover:underline flex items-center gap-1">
-            <ChevronLeftIcon />
+          <Link
+            href={`/novel/${slug}`}
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <BookOpenIcon />
             Novel
           </Link>
         </div>
-        <div className="flex gap-2 items-center">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpenIcon />
-            Quick Read
-          </h1>
-          <NavButton
-            icon={<ThemeIcon />}
-            onClick={() => setShowSettings(!showSettings)}
-            ariaLabel={showSettings ? 'Hide settings' : 'Show settings'}
-            ariaExpanded={showSettings}
-            ariaControls="settings-panel"
-          />
-        </div>
       </div>
 
-      {showSettings && (
-        <SettingsPanel
-          themeConfig={themeConfig}
-          onThemeConfigChange={setThemeConfig}
-          aiSettings={aiSettings}
-          onAiSettingsChange={setAiSettings}
-          onProviderConfigUpdate={updateProviderConfig}
+      {/* Desktop Bottom Navigation */}
+      <div className="hidden md:flex fixed bottom-4 left-1/2 -translate-x-1/2 gap-2 z-10">
+        <NavButton
+          icon={<HomeIcon />}
+          label="Home"
+          onClick={() => router.push('/')}
+          ariaLabel="Go to home"
+          className="shadow-lg"
         />
-      )}
-
-      {/* Novel Info Card */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-        <h2 className="font-bold text-lg text-blue-900">{novel.book.name}</h2>
-        <p className="text-blue-700 text-sm">by {novel.book.author.name}</p>
-        <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <p className="text-blue-600 text-sm">
-            {visibleChapterSlug ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                Reading: Ch {visibleChapterIndex}
-              </span>
-            ) : (
-              <span className="text-gray-500">Start scrolling to track progress</span>
-            )}
-          </p>
-          <p className="text-blue-600 text-sm">
-            {novel.book.chapterCount} chapters • {chapters.filter((c) => c.chapter.aiSummary).length} with AI summaries
-          </p>
-        </div>
+        <NavButton
+          icon={<BookOpenIcon />}
+          label="Novel"
+          onClick={() => router.push(`/novel/${slug}`)}
+          ariaLabel="Back to novel"
+          className="shadow-lg"
+        />
       </div>
-
-      {/* Chapter List */}
-      <div className="space-y-4 pb-20">
-        {chapters.map((chapterInfo, index) => (
-          <ChapterSummaryCard
-            key={chapterInfo.chapter.slug}
-            slug={slug}
-            chapter={chapterInfo}
-            isActive={visibleChapterSlug === chapterInfo.chapter.slug}
-            index={index}
-          />
-        ))}
-      </div>
-
-      {/* Footer Info */}
-      <div className="mt-8 text-center pb-20">
-        <p className="text-gray-500 text-sm">
-          Scroll to track your reading progress • Click chapter to read full content
-        </p>
-      </div>
-    </PageLayout>
-
-    {/* Fixed Bottom Navigation */}
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-10">
-      <div className="flex divide-x divide-gray-200">
-        <Link
-          href="/"
-          className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <HomeIcon />
-          Home
-        </Link>
-        <Link
-          href={`/novel/${slug}`}
-          className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <BookOpenIcon />
-          Novel
-        </Link>
-      </div>
-    </div>
-
-    {/* Desktop Bottom Navigation */}
-    <div className="hidden md:flex fixed bottom-4 left-1/2 -translate-x-1/2 gap-2 z-10">
-      <NavButton
-        icon={<HomeIcon />}
-        label="Home"
-        onClick={() => router.push('/')}
-        ariaLabel="Go to home"
-        className="shadow-lg"
-      />
-      <NavButton
-        icon={<BookOpenIcon />}
-        label="Novel"
-        onClick={() => router.push(`/novel/${slug}`)}
-        ariaLabel="Back to novel"
-        className="shadow-lg"
-      />
-    </div>
-  </>
+    </>
   );
 }
