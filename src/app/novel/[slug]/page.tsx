@@ -618,18 +618,17 @@ export default function NovelPage() {
               )}
               {!novel.completedAt && currentChapter?.chapterSlug && (
                 <p className="text-sm px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium break-words" title={currentChapter.chapterName || ''}>
-                  📖 Current: {currentChapter.chapterName || currentChapter?.chapterSlug ||''}
+                  📖 Current: {currentChapter.chapterName || currentChapter?.chapterSlug || ''}
                 </p>
               )}
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={currentChapter?.chapterSlug ? `/novel/${slug}/chapter/${currentChapter.chapterSlug}` : `/novel/${slug}/chapter/${chapters[0]?.chapter.slug || ''}`}
-                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit cursor-pointer ${
-                  currentChapter?.chapterSlug
+                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit cursor-pointer ${currentChapter?.chapterSlug
                     ? 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
                     : 'bg-green-500 hover:bg-green-600 active:bg-green-700'
-                }`}
+                  }`}
               >
                 {currentChapter?.chapterSlug ? '📖 Continue Reading' : '🎯 Start Reading'}
               </Link>
@@ -651,82 +650,88 @@ export default function NovelPage() {
                   className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-amber-500 hover:bg-amber-600 active:bg-amber-700 focus:bg-amber-700"
                 />
               )}
-              {aiSettings.providers[aiSettings.provider]?.apiKey && (
-                batchGeneration.isGenerating ? (
-                  <NavButton
-                    icon={<SparklesIcon />}
-                    label="Generating..."
-                    onClick={() => {}}
-                    disabled={true}
-                    ariaLabel="Generating summaries"
-                    className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-purple-500 disabled:bg-gray-400"
-                  />
-                ) : (
-                  <details className="group relative">
-                    <summary className="cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 list-none">
-                      <SparklesIcon />
-                      <span>Generate Summaries ({batchSize === Infinity ? 'All' : batchSize})</span>
-                      <span className="group-open:rotate-180 transition-transform">▼</span>
-                    </summary>
-                    <div className="absolute mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 min-w-fit">
-                      <div className="p-1">
-                        <div className="text-xs text-gray-500 px-2 py-1 font-medium">Select batch size:</div>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setBatchSize(10);
-                          }}
-                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
-                        >
-                          10 chapters
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setBatchSize(100);
-                          }}
-                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
-                        >
-                          100 chapters
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setBatchSize(1000);
-                          }}
-                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
-                        >
-                          1,000 chapters
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setBatchSize(Infinity);
-                          }}
-                          className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
-                        >
-                          All chapters
-                        </button>
-                        <hr className="my-1 border-gray-200" />
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            generateBatchSummaries();
-                            (e.currentTarget.closest('details'))?.removeAttribute('open');
-                          }}
-                          className="block w-full text-left px-3 py-2 text-sm bg-purple-500 text-white hover:bg-purple-600 rounded transition-colors font-medium"
-                        >
-                          Generate
-                        </button>
-                      </div>
+              {batchGeneration.isGenerating ? (
+                <NavButton
+                  icon={<SparklesIcon />}
+                  label="Generating..."
+                  onClick={() => { }}
+                  disabled={true}
+                  ariaLabel="Generating summaries"
+                  className="px-3 py-1.5 rounded font-medium w-full sm:w-fit bg-purple-500 disabled:bg-gray-400"
+                />
+              ) : !aiSettings.providers[aiSettings.provider]?.apiKey ? (
+                <div
+                  title="Please set your AI API key in settings (Quick Read or Chapter page) on this novel to enable summary generation"
+                  className="flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium bg-gray-400 cursor-not-allowed w-full sm:w-fit transition-colors"
+                >
+                  <SparklesIcon />
+                  <span>Generate Summaries ({batchSize === Infinity ? 'All' : batchSize})</span>
+                </div>
+              ) : (
+                <details className="group relative">
+                  <summary className="cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm text-white font-medium transition-colors w-full sm:w-fit bg-purple-500 hover:bg-purple-600 active:bg-purple-700 focus:bg-purple-700 list-none">
+                    <SparklesIcon />
+                    <span>Generate Summaries ({batchSize === Infinity ? 'All' : batchSize})</span>
+                    <span className="group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="absolute mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 min-w-fit">
+                    <div className="p-1">
+                      <div className="text-xs text-gray-500 px-2 py-1 font-medium">Select batch size:</div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setBatchSize(10);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                      >
+                        10 chapters
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setBatchSize(100);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                      >
+                        100 chapters
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setBatchSize(1000);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                      >
+                        1,000 chapters
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setBatchSize(Infinity);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded transition-colors"
+                      >
+                        All chapters
+                      </button>
+                      <hr className="my-1 border-gray-200" />
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          generateBatchSummaries();
+                          (e.currentTarget.closest('details'))?.removeAttribute('open');
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm bg-purple-500 text-white hover:bg-purple-600 rounded transition-colors font-medium"
+                      >
+                        Generate
+                      </button>
                     </div>
-                  </details>
-                )
+                  </div>
+                </details>
               )}
             </div>
           </div>
@@ -790,20 +795,20 @@ export default function NovelPage() {
                 .map((chapterInfo) => {
                   const actualIndex = chapters.findIndex(c => c.chapter.slug === chapterInfo.chapter.slug) ?? 0;
                   return (
-                <Link
-                  key={chapterInfo.chapter.slug}
-                  href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
-                  className="block p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-xs"
-                >
-                  <div className="flex justify-between items-center gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <AiSummaryBadge hasSummary={!!chapterInfo.chapter.aiSummary} showPlaceholder />
-                      <span className="font-medium truncate">Ch {actualIndex + 1}: {chapterInfo.chapter.name}</span>
-                    </div>
-                    <span className="text-gray-500 text-xs flex-shrink-0">→</span>
-                  </div>
-                </Link>
-              );
+                    <Link
+                      key={chapterInfo.chapter.slug}
+                      href={`/novel/${slug}/chapter/${chapterInfo.chapter.slug}`}
+                      className="block p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-xs"
+                    >
+                      <div className="flex justify-between items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <AiSummaryBadge hasSummary={!!chapterInfo.chapter.aiSummary} showPlaceholder />
+                          <span className="font-medium truncate">Ch {actualIndex + 1}: {chapterInfo.chapter.name}</span>
+                        </div>
+                        <span className="text-gray-500 text-xs flex-shrink-0">→</span>
+                      </div>
+                    </Link>
+                  );
                 })}
             </div>
           </div>
