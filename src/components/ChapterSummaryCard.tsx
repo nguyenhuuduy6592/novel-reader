@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { ChapterInfo, ReadingThemeConfig } from '@/types';
-import { AiSummaryBadge } from '@/components/AiSummaryBadge';
 
 interface ChapterSummaryCardProps {
   slug: string
@@ -39,7 +38,6 @@ export function ChapterSummaryCard({ slug, chapter, isActive, index, themeConfig
                 <h3 className="font-bold text-lg">
                   Ch {index + 1}: {chapterName}
                 </h3>
-                <AiSummaryBadge hasSummary={!!aiSummary} />
               </div>
               {aiSummary ? (
                 <p className="opacity-80">
@@ -49,13 +47,6 @@ export function ChapterSummaryCard({ slug, chapter, isActive, index, themeConfig
                 <p className="italic opacity-50">
                   AI summary not generated
                 </p>
-              )}
-            </div>
-            <div className="flex-shrink-0">
-              {isActive && (
-                <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full text-xs font-bold">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                </span>
               )}
             </div>
           </div>
